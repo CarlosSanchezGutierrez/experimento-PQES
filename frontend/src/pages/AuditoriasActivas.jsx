@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { Activity, CheckCircle2, Play, RefreshCw } from "lucide-react";
+import { Activity, CheckCircle2, Pencil, Play, RefreshCw } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import PlanningHistoryButton from "../components/PlanningHistoryButton";
+import EditAuditModal from "../components/EditAuditModal";
 import { PLANNING_APPROVE_ROLES, RISK_FACTORS } from "../constants/planning";
 import { closeAudit, getActiveAudits, getPlanningAudits, startAudit } from "../services/planningService";
 import "./Planning.css";
@@ -20,6 +21,7 @@ function AuditoriasActivas() {
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [editingAudit, setEditingAudit] = useState(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -66,6 +68,18 @@ function AuditoriasActivas() {
       setBusyId(null);
     }
   };
+
+  const handleEdited = async (successMessage) => {
+    setEditingAudit(null);
+    await refresh();
+    setMessage(successMessage);
+  };
+
+  const editButton = (audit) => canManage && (
+    <button type="button" onClick={() => { setMessage(""); setEditingAudit(audit); }} disabled={busyId === audit.id}>
+      <Pencil size={16} aria-hidden="true" />Editar
+    </button>
+  );
 
   const factorLabel = (value) => RISK_FACTORS.find((factor) => factor.value === value)?.label || "Media";
   const matrixCount = (likelihood, impact) => activeAudits.filter(
@@ -168,6 +182,7 @@ function AuditoriasActivas() {
                     {canManage && <button type="button" onClick={() => runTransition(audit.id, closeAudit, "Auditoría cerrada.")} disabled={busyId === audit.id}>
                       <CheckCircle2 size={16} aria-hidden="true" />{busyId === audit.id ? "Guardando..." : "Cerrar auditoría"}
                     </button>}
+                    {editButton(audit)}
                     <PlanningHistoryButton proposal={audit} />
                   </div>
                 </article>
@@ -195,11 +210,20 @@ function AuditoriasActivas() {
                     {canManage && <button type="button" onClick={() => runTransition(audit.id, startAudit, "Auditoría iniciada y visible en la matriz.")} disabled={busyId === audit.id}>
                       <Play size={16} aria-hidden="true" />{busyId === audit.id ? "Guardando..." : "Iniciar auditoría"}
                     </button>}
+                    {editButton(audit)}
                     <PlanningHistoryButton proposal={audit} />
                   </div>
                 </article>
               ))}
             </div>
+          )}
+
+          {editingAudit && (
+            <EditAuditModal
+              audit={editingAudit}
+              onClose={() => setEditingAudit(null)}
+              onSaved={handleEdited}
+            />
           )}
         </section>
       </main>

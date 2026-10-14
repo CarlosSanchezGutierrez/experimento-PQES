@@ -14,7 +14,8 @@ const {
   startAudit,
   closeAudit,
   rejectProposal,
-  deleteProposal
+  deleteProposal,
+  editAudit
 } = require("../controllers/planningController");
 const { getHistory, addComment } = require("../controllers/planningHistoryController");
 
@@ -28,6 +29,7 @@ router.post("/:id/comments", verifyToken, addComment);
 router.post("/", verifyToken, allowRoles(...PLANNING_CREATE_ROLES), createProposal);
 router.put("/:id", verifyToken, allowRoles(...PLANNING_CREATE_ROLES), updateProposal);
 router.delete("/:id", verifyToken, allowRoles(...PLANNING_CREATE_ROLES), deleteProposal);
+router.patch("/:id/details", verifyToken, allowRoles(...PLANNING_APPROVE_ROLES), editAudit);
 router.post("/:id/approve", verifyToken, allowRoles(...PLANNING_APPROVE_ROLES), approveProposal);
 router.post("/:id/start", verifyToken, allowRoles(...PLANNING_APPROVE_ROLES), startAudit);
 router.post("/:id/close", verifyToken, allowRoles(...PLANNING_APPROVE_ROLES), closeAudit);

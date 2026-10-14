@@ -74,3 +74,8 @@ export const closeAudit = async (id) => {
 export const deleteAuditProposal = async (id) => {
   await request(`/${id}`, { method: "DELETE" });
 };
+
+export const editAudit = async (id, changes) => {
+  const data = await request(`/${id}/details`, { method: "PATCH", body: JSON.stringify(changes) });
+  return data.audit;
+};

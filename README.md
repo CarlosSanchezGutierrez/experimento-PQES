@@ -98,6 +98,10 @@ El flujo permite crear propuestas con título, objetivo, área, tipo, nivel de r
 
 Las pruebas de integración de `backend/tests/planning.integration.test.js` verifican el flujo HTTP de creación, validación, duplicidad, edición, aprobación y permisos. Se ejecutan con `npm run test:coverage --prefix backend` y forman parte de `npm run quality`.
 
+### HU-12: edición de auditorías
+
+Una auditoría aprobada o en curso se puede corregir con `PATCH /api/planning/:id/details`, solo por `SUPER_ADMIN` o `DIRECTOR`. Las reglas están en `backend/config/auditEditRules.js`: aprobada permite cambiar objetivo, responsable, trimestre, fechas, probabilidad e impacto; en curso solo objetivo, responsable y fecha de fin. Título, área, tipo y año no cambian después de aprobar, y las auditorías cerradas o rechazadas no se editan. Cada edición valida con las mismas reglas de HU-22, recalcula el riesgo si cambian probabilidad o impacto y registra el evento `AUDIT_UPDATED` con el valor anterior y el nuevo de cada campo, visible en el historial del expediente. En la pantalla *Auditorías activas* el botón **Editar** abre un formulario que solo muestra los campos permitidos.
+
 ### HU-23: revisión, aprobación o rechazo
 
 Los roles `SUPER_ADMIN` y `DIRECTOR` pueden resolver una propuesta abierta. El rechazo requiere un motivo no vacío, registra quién decidió y cuándo, guarda el motivo en la propuesta y genera el evento `AUDIT_PROPOSAL_REJECTED` con el mismo motivo. La pantalla separa propuestas rechazadas de las abiertas y muestra su motivo y responsable de decisión. Las propuestas rechazadas no se pueden editar, aprobar, volver a rechazar ni eliminar. Las propuestas aprobadas tampoco se pueden editar ni eliminar; su única transición posterior es iniciar la auditoría. Las pruebas de integración comprueban permisos, motivo requerido, registro de decisión y rechazo de cambios posteriores.

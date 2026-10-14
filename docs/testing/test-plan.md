@@ -73,7 +73,7 @@ La disponibilidad de 99.5% requiere una ventana de medición mensual; RTO de 4 h
 | TC-10 | RF-12: crear auditoría con datos completos | API/E2E | Alta | 3 | Parcial: se prueba propuesta/aprobación, no el flujo completo de captura de auditoría |
 | TC-11 | RF-12: creación con campos vacíos | Unit/API | Alta | 3 | Parcial: validación de propuestas existe; validar contrato de auditoría |
 | TC-12 | RF-12: creación con datos inválidos | Unit/API | Alta | 3 | Parcial: validación de propuestas existe; validar contrato de auditoría |
-| TC-13 | RF-13: edición de auditoría | API/E2E | Alta | 3 | Parcial: se edita propuesta abierta; falta edición del expediente según estado |
+| TC-13 | RF-13: edición de auditoría | API/E2E | Alta | 3 | Cubierto por API (`auditEdit.integration.test.js`): edición de auditoría aprobada y en curso con campos permitidos por estado, campos bloqueados, cerrada protegida, permisos e historial `AUDIT_UPDATED` |
 | TC-14 | RF-13: edición con campos vacíos | Unit/API | Alta | 3 | Parcial |
 | TC-15 | RF-14: transición de estado reflejada en panel | API/UI | Alta | 3 | Parcial: estados previos, inicio/cierre y transiciones inválidas probadas por API; reflejo visual queda en PR-5 |
 | TC-16 | RF-16: riesgo válido reflejado en panel | API/UI | Alta | 3 | Parcial: registro/cálculo de riesgo probado; falta verificar tablero integrado |
