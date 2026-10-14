@@ -54,8 +54,7 @@ function Registro() {
     <div className="login-page">
       <div className="login-card">
         <div className="logo-box">
-          <span className="logo-v">V</span>
-          <span className="logo-check">✓</span>
+           <img src="/vera-logo.svg" alt="VERA" style={{ width: 46, height: 46 }} />
         </div>
 
         <h1>VERA</h1>
