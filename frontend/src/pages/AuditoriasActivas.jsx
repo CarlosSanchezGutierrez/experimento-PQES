@@ -5,6 +5,8 @@ import PlanningHistoryButton from "../components/PlanningHistoryButton";
 import EditAuditModal from "../components/EditAuditModal";
 import { PLANNING_APPROVE_ROLES, RISK_FACTORS } from "../constants/planning";
 import { closeAudit, getActiveAudits, getPlanningAudits, startAudit } from "../services/planningService";
+import { getRisks } from "../services/riskService";
+import { getControls } from "../services/controlService";
 import "./Planning.css";
 
 const riskFor = (likelihood, impact) => {
@@ -17,6 +19,9 @@ function AuditoriasActivas() {
   const canManage = PLANNING_APPROVE_ROLES.includes(user?.role);
   const [activeAudits, setActiveAudits] = useState([]);
   const [approvedAudits, setApprovedAudits] = useState([]);
+  const [risks, setRisks] = useState([]);
+  const [controls, setControls] = useState([]);
+  const [selectedCell, setSelectedCell] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
@@ -25,9 +30,13 @@ function AuditoriasActivas() {
 
   const refresh = useCallback(async () => {
     try {
-      const [active, proposals] = await Promise.all([getActiveAudits(), getPlanningAudits()]);
+      const [active, proposals, linkedRisks, linkedControls] = await Promise.all([
+        getActiveAudits(), getPlanningAudits(), getRisks(), getControls()
+      ]);
       setActiveAudits(active);
       setApprovedAudits(proposals.filter((item) => item.status === "APPROVED"));
+      setRisks(linkedRisks);
+      setControls(linkedControls);
       setError("");
     } catch (loadError) {
       setError(loadError.message);
@@ -38,11 +47,13 @@ function AuditoriasActivas() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getActiveAudits(), getPlanningAudits()])
-      .then(([active, proposals]) => {
+    Promise.all([getActiveAudits(), getPlanningAudits(), getRisks(), getControls()])
+      .then(([active, proposals, linkedRisks, linkedControls]) => {
         if (cancelled) return;
         setActiveAudits(active);
         setApprovedAudits(proposals.filter((item) => item.status === "APPROVED"));
+        setRisks(linkedRisks);
+        setControls(linkedControls);
         setError("");
       })
       .catch((loadError) => {
@@ -85,6 +96,9 @@ function AuditoriasActivas() {
   const matrixCount = (likelihood, impact) => activeAudits.filter(
     (audit) => (audit.likelihood ?? 2) === likelihood && (audit.impact ?? 2) === impact
   ).length;
+  const selectedAudits = selectedCell ? activeAudits.filter((audit) =>
+    (audit.likelihood ?? 2) === selectedCell.likelihood && (audit.impact ?? 2) === selectedCell.impact
+  ) : [];
 
   return (
     <div className="dashboard-layout">
@@ -137,8 +151,16 @@ function AuditoriasActivas() {
                           const risk = riskFor(likelihood.value, impact.value);
                           return (
                             <td className={`matrix-cell matrix-${risk.toLowerCase()}`} key={impact.value}>
-                              <strong>{matrixCount(likelihood.value, impact.value)}</strong>
-                              <span>{risk}</span>
+                              <button
+                                type="button"
+                                className="matrix-cell-button"
+                                aria-label={`Ver auditorías con probabilidad ${likelihood.label} e impacto ${impact.label}: ${matrixCount(likelihood.value, impact.value)}`}
+                                aria-pressed={selectedCell?.likelihood === likelihood.value && selectedCell?.impact === impact.value}
+                                onClick={() => setSelectedCell({ likelihood: likelihood.value, impact: impact.value })}
+                              >
+                                <strong>{matrixCount(likelihood.value, impact.value)}</strong>
+                                <span>{risk}</span>
+                              </button>
                             </td>
                           );
                         })}
@@ -149,6 +171,27 @@ function AuditoriasActivas() {
               </div>
             )}
             <p className="risk-matrix-legend">Bajo: puntuación 1–2 · Medio: 3–4 · Alto: 6–9. El producto se calcula con niveles de 1 (bajo) a 3 (alto).</p>
+            {selectedCell && (
+              <section className="matrix-selection" aria-live="polite" aria-label="Detalle de la celda seleccionada">
+                <h3>Auditorías y riesgos · probabilidad {factorLabel(selectedCell.likelihood)}, impacto {factorLabel(selectedCell.impact)}</h3>
+                {selectedAudits.length === 0 ? <p>No hay auditorías activas en esta celda.</p> : selectedAudits.map((audit) => {
+                  const linkedRisks = risks.filter((item) => item.linkedAuditId === audit.id);
+                  return <article key={audit.id} className="matrix-selection-audit">
+                    <h4>{audit.id} · {audit.title}</h4>
+                    <p>Riesgo de auditoría: {riskFor(audit.likelihood ?? 2, audit.impact ?? 2)} ({(audit.likelihood ?? 2) * (audit.impact ?? 2)}/9).</p>
+                    {linkedRisks.length ? linkedRisks.map((item) => {
+                      const relatedControls = controls.filter((control) => control.riskIds.includes(item.id));
+                      return <div key={item.id} className="matrix-linked-risk">
+                        <strong>{item.id} · {item.title}</strong>
+                        <p>{item.description} · Nivel {item.level} ({item.score}/9)</p>
+                        <p>Controles asociados: {relatedControls.length ? relatedControls.map((control) => `${control.id} · ${control.title} (${control.effectiveness}/5)`).join(", ") : "ninguno registrado"}.</p>
+                      </div>;
+                    }) : <p>No hay riesgos registrados vinculados a esta auditoría.</p>}
+                    <a href={`#audit-${audit.id}`}>Ir a la auditoría {audit.id}</a>
+                  </article>;
+                })}
+              </section>
+            )}
           </section>
 
           <div className="planning-section-heading active-list-heading">
@@ -160,7 +203,7 @@ function AuditoriasActivas() {
           ) : (
             <div className="planning-list">
               {activeAudits.map((audit) => (
-                <article className="planning-card active-audit-card" key={audit.id}>
+                <article className="planning-card active-audit-card" id={`audit-${audit.id}`} key={audit.id}>
                   <div className="planning-card-icon"><Activity size={21} aria-hidden="true" /></div>
                   <div className="planning-card-content">
                     <div className="proposal-heading">
