@@ -74,9 +74,6 @@ const describe = ({ action, target, details }) => {
     case "LOGIN_FAILED":
     case "TWO_FACTOR_FAILED":
       return details.ip ? `IP ${details.ip}` : "";
-    case "LOGIN_FAILED":
-    case "TWO_FACTOR_FAILED":
-      return details.ip ? `IP ${details.ip}` : "";
     case "AUDIT_PROPOSAL_CREATED":
     case "AUDIT_PROPOSAL_UPDATED":
     case "AUDIT_PROPOSAL_DELETED":
@@ -99,8 +96,6 @@ const describe = ({ action, target, details }) => {
       return `${details.controlId} · ${details.title}${details.rating ? ` · efectividad ${details.rating}/5` : ""}`;
     case "EVIDENCE_REGISTERED":
       return `${details.evidenceId} · ${details.entityType} ${details.entityId} · ${details.title}`;
-    case "LOGIN_SUCCESS":
-      return details.method === "PASSWORD_2FA" ? "Contraseña + 2FA" : "Contraseña";
     case "LOGIN_SUCCESS":
       return details.method === "PASSWORD_2FA" ? "Contraseña + 2FA" : "Contraseña";
     default:
