@@ -40,7 +40,6 @@ function Sidebar({ active }) {
   // path: a dónde lleva el botón. Las pantallas que aún no existen no llevan path.
   const items = [
     { id: "dashboard", label: "Panel de Portafolio", Icon: LayoutDashboard, path: "/dashboard", show: true },
-    { id: "dashboard", label: "Panel de Portafolio", Icon: LayoutDashboard, path: "/dashboard", show: true },
     { id: "planificacion", label: "Planificación", Icon: ClipboardList, path: "/planificacion", show: true },
     { id: "trimestres", label: "Trimestres", Icon: CalendarRange, path: "/trimestres", show: true },
     { id: "auditorias-activas", label: "Auditorías activas y riesgos", Icon: Activity, path: "/auditorias-activas", show: true },
@@ -48,9 +47,6 @@ function Sidebar({ active }) {
     { id: "controles", label: "Mapa de controles", Icon: ClipboardCheck, path: "/controles", show: true },
     { id: "notificaciones", label: "Pendientes", Icon: BellRing, path: "/notificaciones", show: true },
     { id: "evidencias", label: "Evidencias", Icon: Files, path: "/evidencias", show: true },
-    { id: "reportes", label: "Reportes", Icon: FileChartColumn, show: canSeeReports },
-    { id: "usuarios", label: "Usuarios", Icon: UserCog, path: "/usuarios", show: canSeeUsers },
-    { id: "auditoria", label: "Registro de actividad", Icon: ScrollText, path: "/auditoria", show: canSeeRoles },
     { id: "reportes", label: "Reportes", Icon: FileChartColumn, show: canSeeReports },
     { id: "usuarios", label: "Usuarios", Icon: UserCog, path: "/usuarios", show: canSeeUsers },
     { id: "auditoria", label: "Registro de actividad", Icon: ScrollText, path: "/auditoria", show: canSeeRoles },
