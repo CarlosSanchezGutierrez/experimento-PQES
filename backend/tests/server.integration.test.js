@@ -1,5 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+process.env.JWT_SECRET ||= "server-integration-test-secret-32-characters";
 const app = require("../server");
 const { startTestServer } = require("./helpers/testServer");
 

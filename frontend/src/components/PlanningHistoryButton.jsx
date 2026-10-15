@@ -12,7 +12,18 @@ const ACTION_LABELS = {
   AUDIT_PROPOSAL_DELETED: "Propuesta eliminada",
   AUDIT_STARTED: "Auditoría iniciada",
   AUDIT_CLOSED: "Auditoría cerrada",
+  AUDIT_UPDATED: "Auditoría editada",
   AUDIT_COMMENT_ADDED: "Comentario agregado"
+};
+
+const CHANGE_LABELS = {
+  objective: "objetivo",
+  responsibleId: "responsable",
+  quarter: "trimestre",
+  startDate: "fecha de inicio",
+  endDate: "fecha de fin",
+  likelihood: "probabilidad",
+  impact: "impacto"
 };
 
 const formatDate = (date) => new Date(date).toLocaleString("es-MX", {
@@ -22,6 +33,9 @@ const formatDate = (date) => new Date(date).toLocaleString("es-MX", {
 const eventDescription = (entry) => {
   if (entry.action === "AUDIT_PROPOSAL_APPROVED") return `Trimestre asignado: ${entry.details.quarter}.`;
   if (entry.action === "AUDIT_PROPOSAL_REJECTED") return `Motivo: ${entry.details.reason}`;
+  if (entry.action === "AUDIT_UPDATED") {
+  return `Datos modificados: ${Object.keys(entry.details.changes || {}).map((field) => CHANGE_LABELS[field] || field).join(", ")}.`;
+  }
   if (entry.action === "AUDIT_COMMENT_ADDED") return "Se agregó un comentario al expediente.";
   return "Cambio registrado en la bitácora.";
 };

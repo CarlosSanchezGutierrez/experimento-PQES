@@ -61,7 +61,7 @@ function Sidebar({ active }) {
     <aside className="sidebar">
       <div className="sidebar-brand">
         <div className="sidebar-logo">
-          V<span>✓</span>
+          <img src="/vera-logo.svg" alt="VERA" style={{ width: 32, height: 32 }} />
         </div>
 
         <div>
