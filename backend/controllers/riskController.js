@@ -9,7 +9,7 @@ const FACTORS = [1, 2, 3];
 const text = (value) => String(value ?? "").trim();
 const activeUsers = () => userRepository.getAll().filter((user) => user.status === USER_STATUS.ACTIVE);
 
-const parseCore = (body) => {
+const parseCore = async (body) => {
   const title = text(body.title);
   const description = text(body.description);
   const area = text(body.area);
@@ -23,7 +23,7 @@ const parseCore = (body) => {
   if (!area || area.length > 100) return { error: "El área es obligatoria y admite hasta 100 caracteres." };
   if (!owner) return { error: "Selecciona una persona responsable con cuenta activa." };
   if (responsePlan.length > 2000) return { error: "El plan de respuesta admite hasta 2,000 caracteres." };
-  if (linkedAuditId && !planningRepository.findById(linkedAuditId)) {
+  if (linkedAuditId && !await planningRepository.findById(linkedAuditId)) {
     return { error: "La auditoría relacionada no existe." };
   }
 
@@ -68,8 +68,8 @@ const listOwners = (req, res) => {
   res.json({ owners: activeUsers().map(({ id, name, username, role }) => ({ id, name, username, role })) });
 };
 
-const createRisk = (req, res) => {
-  const core = parseCore(req.body);
+const createRisk = async (req, res) => {
+  const core = await parseCore(req.body);
   if (core.error) return res.status(400).json({ message: core.error });
   const assessment = parseAssessment(req.body);
   if (assessment.error) return res.status(400).json({ message: assessment.error });
@@ -91,10 +91,10 @@ const createRisk = (req, res) => {
   res.status(201).json({ risk });
 };
 
-const updateRisk = (req, res) => {
+const updateRisk = async (req, res) => {
   const current = riskRepository.findById(req.params.id);
   if (!current) return res.status(404).json({ message: "Riesgo no encontrado." });
-  const core = parseCore(req.body);
+  const core = await parseCore(req.body);
   if (core.error) return res.status(400).json({ message: core.error });
   if (riskRepository.findDuplicate(core.data, current.id)) {
     return res.status(409).json({ message: "Ya existe un riesgo con el mismo nombre y área." });

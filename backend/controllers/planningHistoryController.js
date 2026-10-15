@@ -4,8 +4,8 @@ const { query, logActivity } = require("../services/auditLogger");
 const { ROLES } = require("../config/roles");
 
 const canView = (proposal, user) => user.role !== ROLES.AUDITOR || proposal.responsibleId === user.id;
-const findVisibleProposal = (id, user, res) => {
-  const proposal = planningRepository.findById(id);
+const findVisibleProposal = async (id, user, res) => {
+  const proposal = await planningRepository.findById(id);
   if (!proposal) {
     res.status(404).json({ message: "Propuesta de auditoría no encontrada." });
     return null;
@@ -17,8 +17,8 @@ const findVisibleProposal = (id, user, res) => {
   return proposal;
 };
 
-const getHistory = (req, res) => {
-  const proposal = findVisibleProposal(req.params.id, req.user, res);
+const getHistory = async (req, res) => {
+  const proposal = await findVisibleProposal(req.params.id, req.user, res);
   if (!proposal) return;
   res.json({
     history: query({ entityId: proposal.id, limit: 200 }),
@@ -26,8 +26,8 @@ const getHistory = (req, res) => {
   });
 };
 
-const addComment = (req, res) => {
-  const proposal = findVisibleProposal(req.params.id, req.user, res);
+const addComment = async (req, res) => {
+  const proposal = await findVisibleProposal(req.params.id, req.user, res);
   if (!proposal) return;
   const text = String(req.body.text ?? "").trim();
   if (text.length < 3 || text.length > 2000) {

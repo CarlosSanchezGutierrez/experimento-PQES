@@ -10,17 +10,17 @@ const ENTITY_TYPES = ["RISK", "CONTROL", "AUDIT"];
 const EVIDENCE_TYPES = ["DOCUMENT", "SCREENSHOT", "REPORT", "OTHER"];
 const text = (value) => String(value ?? "").trim();
 
-const findEntity = (type, id) => {
+const findEntity = async (type, id) => {
   if (type === "RISK") return riskRepository.findById(id);
   if (type === "CONTROL") return controlRepository.findById(id);
   if (type === "AUDIT") return planningRepository.findById(id);
   return null;
 };
 
-const canAccessEntity = (type, id, user) => {
-  if (user.role !== ROLES.AUDITOR) return Boolean(findEntity(type, id));
+const canAccessEntity = async (type, id, user) => {
+  if (user.role !== ROLES.AUDITOR) return Boolean(await findEntity(type, id));
   if (type === "RISK") return riskRepository.findById(id)?.ownerId === user.id;
-  if (type === "AUDIT") return planningRepository.findById(id)?.responsibleId === user.id;
+  if (type === "AUDIT") return (await planningRepository.findById(id))?.responsibleId === user.id;
   if (type === "CONTROL") {
     const control = controlRepository.findById(id);
     return Boolean(control && control.riskIds.some((riskId) => riskRepository.findById(riskId)?.ownerId === user.id));
@@ -28,19 +28,20 @@ const canAccessEntity = (type, id, user) => {
   return false;
 };
 
-const listEvidence = (req, res) => {
+const listEvidence = async (req, res) => {
   const { entityType, entityId, search } = req.query;
   const needle = text(search).toLowerCase();
-  const items = evidenceRepository.getAll().filter((item) => {
-    if (!canAccessEntity(item.entityType, item.entityId, req.user)) return false;
-    if (entityType && item.entityType !== entityType) return false;
-    if (entityId && item.entityId !== entityId) return false;
-    return !needle || `${item.title} ${item.description} ${item.reference} ${item.entityTitle}`.toLowerCase().includes(needle);
-  });
+  const items = [];
+  for (const item of evidenceRepository.getAll()) {
+    if (entityType && item.entityType !== entityType) continue;
+    if (entityId && item.entityId !== entityId) continue;
+    if (needle && !`${item.title} ${item.description} ${item.reference} ${item.entityTitle}`.toLowerCase().includes(needle)) continue;
+    if (await canAccessEntity(item.entityType, item.entityId, req.user)) items.push(item);
+  }
   res.json({ evidence: items });
 };
 
-const createEvidence = (req, res) => {
+const createEvidence = async (req, res) => {
   const title = text(req.body.title);
   const description = text(req.body.description);
   const evidenceType = text(req.body.evidenceType);
@@ -55,9 +56,9 @@ const createEvidence = (req, res) => {
     return res.status(400).json({ message: "Captura un enlace HTTPS o una referencia de 3 a 500 caracteres." });
   }
   if (!ENTITY_TYPES.includes(entityType) || !entityId) return res.status(400).json({ message: "Selecciona un riesgo, control o auditoría para relacionar la evidencia." });
-  const entity = findEntity(entityType, entityId);
+  const entity = await findEntity(entityType, entityId);
   if (!entity) return res.status(404).json({ message: "El elemento relacionado no existe." });
-  if (!canAccessEntity(entityType, entityId, req.user)) return res.status(404).json({ message: "El elemento relacionado no existe." });
+  if (!await canAccessEntity(entityType, entityId, req.user)) return res.status(404).json({ message: "El elemento relacionado no existe." });
 
   const author = userRepository.findById(req.user.id);
   const evidence = evidenceRepository.create({

@@ -8,7 +8,7 @@
 
 [▶ Abrir ejecución completa de calidad y pruebas](https://github.com/humbertofigb15/VERA/actions/workflows/classroom-quality.yml) · [Guía rápida para revisión docente](docs/testing/professor-quick-run.md)
 
-> **Estado:** prototipo académico. Los datos de usuarios y propuestas se mantienen en memoria y se reinician al reiniciar el backend. El repositorio contiene cuentas de demostración; no lo despliegues con datos reales ni lo uses como servicio de producción.
+> **Estado:** prototipo académico. Por defecto los datos se mantienen en memoria y se reinician con el backend. Las propuestas y auditorías pueden guardarse en Supabase mediante [esta configuración](docs/supabase-planning.md); los demás dominios aún no tienen persistencia. El repositorio contiene cuentas de demostración; no lo despliegues con datos reales ni lo uses como servicio de producción.
 
 ## Funcionalidades actuales
 
@@ -114,6 +114,8 @@ La planificación captura probabilidad e impacto en una escala de 1 (bajo) a 3 (
 
 `GET /api/dashboard` requiere sesión y devuelve métricas, conteos por estado, matriz activa, pendientes y permisos calculados desde el portafolio. Super Admin y Dirección ven la cola global de decisiones; Gerencia, el seguimiento de propuestas; Auditoría, solo registros asignados por `responsibleId`; Jefatura, una vista general de consulta. La interfaz muestra KPIs, barras de estado, matriz de riesgo 3 × 3 y acciones rápidas filtradas por permisos; los valores se consultan de nuevo al actualizar y no están hardcodeados. Las pruebas de integración verifican autenticación, alcance de auditoría y permisos. No se muestran horas ni hallazgos porque el modelo actual no contiene fuentes de esos datos; así se evita presentar estadísticas inventadas.
 
+Con `VERA_PLANNING_STORE=supabase`, esos conteos y pendientes de propuestas se calculan desde auditorías persistidas en Supabase. La [guía de activación](docs/supabase-planning.md) explica los pasos y los dominios que aún siguen en memoria.
+
 ### HU-14: registro y evaluación de riesgos
 
 `/riesgos` mantiene un registro independiente de las propuestas de auditoría. Cada riesgo requiere nombre, descripción, área, responsable con cuenta activa y una evaluación inicial justificada; puede vincularse con una propuesta existente y documentar un plan de respuesta. Probabilidad e impacto usan valores enteros de 1 a 3; el puntaje es su producto y conserva los umbrales de HU-09: 1–2 bajo, 3–4 medio y 6–9 alto. El servidor calcula el nivel, detecta duplicados por nombre y área sin distinguir mayúsculas, filtra por nivel y búsqueda, y registra creación, cambios y reevaluaciones en la bitácora.
@@ -167,7 +169,7 @@ CodeQL analiza JavaScript y TypeScript en los pull requests, en `main` y semanal
 - Configura una clave JWT aleatoria en `.env`; el backend se detiene si falta o tiene menos de 32 caracteres.
 - La API limita cada IP a 100 solicitudes por ventana de 15 minutos y responde con `429` al excederla. El almacenamiento predeterminado del límite es en memoria y no se comparte entre varias instancias.
 - `.env` está excluido de Git. Comparte únicamente `.env.example`, nunca el archivo local.
-- Las cuentas y propuestas se guardan en memoria, sin persistencia duradera.
+- Las cuentas y los dominios distintos de planificación se guardan en memoria. Las propuestas pueden usar Supabase con la configuración indicada arriba.
 - Las cuentas y contraseñas de demostración son solo para desarrollo y no deben reutilizarse.
 - Antes de cualquier despliegue, se requiere almacenamiento persistente, gestión de secretos de plataforma, configuración de CORS, un almacén compartido para límites de solicitudes, revisión de cuentas de demostración y una evaluación de seguridad del entorno.
 
