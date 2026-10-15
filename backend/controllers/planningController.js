@@ -19,14 +19,22 @@ const isTerminal = (proposal) => ["APPROVED", "ACTIVE", "CLOSED", "REJECTED"].in
 const text = (value) => String(value ?? "").trim();
 const isDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
 
-const activeAuditors = () =>
-  userRepository
-    .getAll()
-    .filter((u) => u.role === ROLES.AUDITOR && u.status === USER_STATUS.ACTIVE)
-    .map((u) => ({ id: u.id, name: u.name, username: u.username }));
+const activeAuditors = async () =>
+  (await userRepository.getAll())
+    .filter(
+      (user) =>
+        user.role === ROLES.AUDITOR &&
+        user.status === USER_STATUS.ACTIVE
+    )
+    .map((user) => ({
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      role: user.role
+    }));
 
 // Valida y limpia el cuerpo de una propuesta. Regresa { error } o { data }.
-const parseProposal = (body) => {
+const parseProposal = async (body) => {
   const title = text(body.title);
   const objective = text(body.objective);
   const scope = text(body.scope);
@@ -74,7 +82,10 @@ const parseProposal = (body) => {
   let responsible = "Sin asignar";
   const rawResponsible = body.responsibleId;
   if (rawResponsible !== undefined && rawResponsible !== null && rawResponsible !== "") {
-    const auditor = activeAuditors().find((a) => a.id === Number(rawResponsible));
+    const auditors = await activeAuditors();
+    const auditor = auditors.find(
+      (a) => a.id === Number(rawResponsible)
+    );
     if (!auditor) return { error: "El responsable debe ser un auditor activo." };
     responsibleId = auditor.id;
     responsible = auditor.name;
@@ -120,13 +131,16 @@ const listActiveAudits = async (req, res) => {
 };
 
 // GET /api/planning/auditors
-const listAuditors = (req, res) => {
-  res.json({ auditors: activeAuditors() });
+
+const listAuditors = async (req, res) => {
+  const auditors = await activeAuditors();
+  res.json({ auditors });
 };
+
 
 // POST /api/planning
 const createProposal = async (req, res) => {
-  const { data, error } = parseProposal(req.body);
+  const { data, error } = await parseProposal(req.body);
   if (error) return res.status(400).json({ message: error });
 
   if (await planningRepository.findDuplicate(data)) {
@@ -135,7 +149,7 @@ const createProposal = async (req, res) => {
 
   const proposal = await planningRepository.create({
     ...data,
-    createdBy: { id: req.user.id, name: req.user.username }
+    createdBy: { id: req.user.id, name: req.user.name || req.user.username }
   });
 
   logActivity({
@@ -155,7 +169,7 @@ const updateProposal = async (req, res) => {
     return res.status(409).json({ message: "Una propuesta resuelta ya no se puede editar." });
   }
 
-  const { data, error } = parseProposal(req.body);
+  const { data, error } = await parseProposal(req.body);
   if (error) return res.status(400).json({ message: error });
 
   if (await planningRepository.findDuplicate(data, current.id)) {
@@ -188,7 +202,7 @@ const approveProposal = async (req, res) => {
 
   const proposal = await planningRepository.approve(current.id, {
     quarter,
-    approvedBy: { id: req.user.id, name: req.user.username }
+    approvedBy: { id: req.user.id, name: req.user.name || req.user.username }
   }, current.storageVersion);
 
   logActivity({
@@ -209,7 +223,7 @@ const startAudit = async (req, res) => {
   }
 
   const audit = await planningRepository.start(current.id, {
-    startedBy: { id: req.user.id, name: req.user.username }
+    startedBy: { id: req.user.id, name: req.user.name || req.user.username }
   }, current.storageVersion);
   logActivity({
     actor: req.user,
@@ -228,7 +242,7 @@ const closeAudit = async (req, res) => {
   }
 
   const audit = await planningRepository.close(current.id, {
-    closedBy: { id: req.user.id, name: req.user.username }
+    closedBy: { id: req.user.id, name: req.user.name || req.user.username }
   }, current.storageVersion);
   logActivity({
     actor: req.user,
@@ -311,7 +325,7 @@ const editAudit = async (req, res) => {
   }
 
   // Se valida la auditoría completa con los cambios aplicados, reutilizando las reglas de HU-22.
-  const { data, error } = parseProposal({ ...current, ...body });
+  const { data, error } = await parseProposal({ ...current, ...body });
   if (error) return res.status(400).json({ message: error });
   if (current.status === "APPROVED" && !data.quarter) {
     return res.status(400).json({ message: "Una auditoría aprobada debe conservar un trimestre." });

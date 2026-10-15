@@ -10,7 +10,10 @@
 
 .sidebar {
   width: 270px;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  box-sizing: border-box;
   background: #ffffff;
   border-right: 1px solid #e8ecef;
   display: flex;
@@ -18,6 +21,10 @@
   position: fixed;
   left: 0;
   top: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .sidebar-brand {
@@ -69,7 +76,31 @@
 }
 
 .sidebar nav {
-  padding: 0 16px;
+  padding: 0 16px 12px;
+  flex: 0 0 auto;
+}
+
+.sidebar-brand,
+.nav-title,
+.sidebar-bottom {
+  flex-shrink: 0;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #cbd5dc;
+  border-radius: 999px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #9eacb7;
 }
 
 .nav-item {

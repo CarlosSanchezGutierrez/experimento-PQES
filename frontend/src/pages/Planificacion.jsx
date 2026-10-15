@@ -141,11 +141,26 @@ function Planificacion() {
     if (ok) closeModal();
   };
 
-  const handleApprove = (item) =>
-    run(
-      () => approveAuditProposal(item.id, quarters[item.id] || item.quarter),
+  
+  const handleApprove = (item) => {
+    const selectedQuarter = quarters[item.id] || item.quarter || "";
+
+    if (!QUARTERS.some((quarter) => quarter.value === selectedQuarter)) {
+      setError(
+        "Selecciona un trimestre estimado antes de marcar la propuesta como aprobada."
+      );
+      setMessage("");
+      return;
+    }
+
+    setError("");
+
+    return run(
+      () => approveAuditProposal(item.id, selectedQuarter),
       "La propuesta alcanzó el 100% y ahora aparece en Trimestres."
     );
+  };
+
 
   const startReject = (item) => {
     setRejectingId(item.id);
@@ -359,7 +374,7 @@ function Planificacion() {
                   <label>Responsable
                     <select value={form.responsibleId} onChange={(event) => updateForm("responsibleId", event.target.value)}>
                       <option value="">Sin asignar</option>
-                      {auditors.map((auditor) => (
+                      {(Array.isArray(auditors) ? auditors : []).map((auditor) => (
                         <option key={auditor.id} value={auditor.id}>{auditor.name}</option>
                       ))}
                     </select>
