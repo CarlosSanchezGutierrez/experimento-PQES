@@ -354,6 +354,25 @@
   border-radius: 9px;
 }
 
+.matrix-cell-button {
+  display: block;
+  width: 100%;
+  min-height: 78px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.matrix-cell-button:hover,
+.matrix-cell-button:focus-visible,
+.matrix-cell-button[aria-pressed="true"] {
+  outline: 2px solid currentColor;
+  outline-offset: -3px;
+}
+
 .matrix-cell strong,
 .matrix-cell span {
   display: block;
@@ -380,6 +399,22 @@
   font-size: 12px;
   line-height: 1.5;
 }
+
+.matrix-selection {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid #dbe3e7;
+  border-radius: 10px;
+  color: #344451;
+}
+
+.matrix-selection h3 { margin: 0 0 12px; font-size: 16px; }
+.matrix-selection-audit { padding: 12px 0; border-top: 1px solid #e8eef0; }
+.matrix-selection-audit h4 { margin: 0 0 6px; }
+.matrix-selection-audit p { margin: 6px 0; font-size: 13px; }
+.matrix-linked-risk { padding-left: 12px; border-left: 3px solid #0a9d91; }
+.matrix-selection-audit a { color: #125466; font-weight: 700; }
+.active-audit-card:target { outline: 3px solid #0a9d91; scroll-margin-top: 24px; }
 
 .active-list-heading {
   margin-top: 34px;

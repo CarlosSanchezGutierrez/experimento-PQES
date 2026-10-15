@@ -28,7 +28,7 @@ function Riesgos() {
 
   const refresh = async () => setRisks(await getRisks(filters));
   useEffect(() => {
-    Promise.all([getRisks(filters), canManage ? getRiskOwners() : Promise.resolve([]), canManage ? getPlanningAudits() : Promise.resolve([])])
+    Promise.all([getRisks(filters), canManage ? getRiskOwners() : Promise.resolve([]), getPlanningAudits()])
       .then(([allRisks, activeOwners, allAudits]) => { setRisks(allRisks); setOwners(activeOwners); setAudits(allAudits); })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -77,7 +77,7 @@ function Riesgos() {
             <div className="risk-record-main">
               <div className="risk-record-heading"><span className="risk-record-id">{risk.id}</span><span className={`risk-badge risk-${risk.level.toLowerCase()}`}>{risk.level}</span><span className="risk-score">P×I {risk.score} / 9</span></div>
               <h2>{risk.title}</h2><p>{risk.description}</p>
-              <div className="risk-record-meta"><span><b>Área:</b> {risk.area}</span><span><b>Responsable:</b> {risk.ownerName}</span><span><b>Estado:</b> Abierto</span><span><b>Evaluaciones:</b> {risk.evaluations.length}</span>{risk.linkedAuditId && <span><b>Auditoría vinculada:</b> {risk.linkedAuditId}</span>}</div>
+              <div className="risk-record-meta"><span><b>Área:</b> {risk.area}</span><span><b>Responsable:</b> {risk.ownerName}</span><span><b>Estado:</b> Abierto</span><span><b>Evaluaciones:</b> {risk.evaluations.length}</span>{risk.linkedAuditId && <span><b>Auditoría vinculada:</b> {audits.some((audit) => audit.id === risk.linkedAuditId && audit.status === "ACTIVE") ? <a href={`/auditorias-activas#audit-${encodeURIComponent(risk.linkedAuditId)}`}>{risk.linkedAuditId}</a> : risk.linkedAuditId}</span>}</div>
               {risk.responsePlan && <p className="risk-plan"><b>Plan de respuesta:</b> {risk.responsePlan}</p>}
               <details className="risk-history"><summary><Activity size={15} /> Historial de evaluación ({risk.evaluations.length})</summary><ol>{[...risk.evaluations].reverse().map((evaluation) => <li key={evaluation.version}><div><b>Versión {evaluation.version}</b><span className={`risk-badge risk-${evaluation.level.toLowerCase()}`}>{evaluation.level} · {evaluation.score}/9</span></div><p>{evaluation.note}</p><small>{evaluation.assessedBy?.name || "Usuario"} · {dateLabel(evaluation.assessedAt)} · Probabilidad {evaluation.likelihood}, impacto {evaluation.impact}</small></li>)}</ol></details>
             </div>
