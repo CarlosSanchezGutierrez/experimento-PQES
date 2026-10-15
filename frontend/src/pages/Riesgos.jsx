@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Activity, ClipboardCheck, Pencil, Plus, ShieldAlert, X } from "lucide-react";
 import Sidebar from "../components/Sidebar";
-import { PLANNING_CREATE_ROLES } from "../constants/planning";
+import { RISK_CONTROL_MANAGE_ROLES } from "../constants/planning";
 import { createRisk, evaluateRisk, getRiskOwners, getRisks, updateRisk } from "../services/riskService";
 import { getPlanningAudits } from "../services/planningService";
 import "./Riesgos.css";
@@ -12,7 +12,7 @@ const dateLabel = (value) => new Date(value).toLocaleString("es-MX", { dateStyle
 
 function Riesgos() {
   const user = JSON.parse(localStorage.getItem("user") || "null");
-  const canManage = PLANNING_CREATE_ROLES.includes(user?.role);
+  const canManage = RISK_CONTROL_MANAGE_ROLES.includes(user?.role);
   const [risks, setRisks] = useState([]);
   const [owners, setOwners] = useState([]);
   const [audits, setAudits] = useState([]);

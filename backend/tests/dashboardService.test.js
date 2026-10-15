@@ -50,7 +50,17 @@ test("roles receive distinct copy and quick-action permissions", () => {
   assert.equal(director.permissions.canApprove, true);
   assert.equal(manager.permissions.canCreate, true);
   assert.equal(manager.permissions.canApprove, false);
-  assert.equal(jefatura.permissions.canCreate, false);
+  assert.equal(jefatura.permissions.canCreate, true);
+  assert.equal(jefatura.permissions.canApprove, false);
   assert.equal(jefatura.permissions.canManageExecution, false);
   assert.equal(auditor.permissions.canManageExecution, false);
+});
+
+test("jefatura sees only its own open proposals as pending actions", () => {
+  const dashboard = getDashboardForUser({ id: 4, role: "JEFATURA" }, [
+    { ...proposals[0], createdBy: { id: 4, name: "Jefatura" } },
+    { ...proposals[3], createdBy: { id: 3, name: "Gerencia" } }
+  ]);
+  assert.deepEqual(dashboard.pendingItems.map(({ id }) => id), ["OPEN-OWNED"]);
+  assert.equal(dashboard.metrics.total, 2);
 });

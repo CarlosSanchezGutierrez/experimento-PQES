@@ -61,4 +61,17 @@ test("HU-17: in-app pending inbox is derived from proposal states and scoped to 
 
   const jefaturaInbox = (await (await fetch(`${baseUrl}/api/notifications`, json(jefatura))).json()).notifications;
   assert.equal(jefaturaInbox.length, 0);
+
+  const jefaturaProposalResponse = await fetch(`${baseUrl}/api/planning`, json(jefatura, "POST", {
+    title: `HU-17 jefatura ${Date.now()}`,
+    objective: "Dar seguimiento a una propuesta de jefatura.",
+    scope: "Inventarios regionales.",
+    justification: "Se requiere una revisión de conciliaciones.",
+    area: "Logística", year: 2026, quarter: "Q3"
+  }));
+  assert.equal(jefaturaProposalResponse.status, 201);
+  const jefaturaProposal = (await jefaturaProposalResponse.json()).proposal;
+  const ownInbox = (await (await fetch(`${baseUrl}/api/notifications`, json(jefatura))).json()).notifications;
+  assert.ok(ownInbox.some((item) => item.entityId === jefaturaProposal.id && item.type === "PROPOSAL_TRACK"));
+  assert.ok(ownInbox.every((item) => item.type !== "AUDIT_START"));
 });

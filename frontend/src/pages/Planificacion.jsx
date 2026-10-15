@@ -13,8 +13,9 @@ import {
 } from "../services/planningService";
 import {
   AUDIT_TYPES,
+  AUDIT_PROPOSAL_CREATE_ROLES,
+  AUDIT_PROPOSAL_DELETE_ROLES,
   PLANNING_APPROVE_ROLES,
-  PLANNING_CREATE_ROLES,
   QUARTERS,
   RISK_FACTORS
 } from "../constants/planning";
@@ -41,7 +42,8 @@ const formatDate = (value) =>
 
 function Planificacion() {
   const user = JSON.parse(localStorage.getItem("user") || "null");
-  const canCreate = PLANNING_CREATE_ROLES.includes(user?.role);
+  const canCreate = AUDIT_PROPOSAL_CREATE_ROLES.includes(user?.role);
+  const canDelete = AUDIT_PROPOSAL_DELETE_ROLES.includes(user?.role);
   const canApprove = PLANNING_APPROVE_ROLES.includes(user?.role);
 
   const [items, setItems] = useState([]);
@@ -284,14 +286,14 @@ function Planificacion() {
                     )}
                     {canCreate && (
                       <>
-                        <button type="button" onClick={() => openEdit(item)}>
+                        {(user.role !== "JEFATURA" || item.createdBy?.id === user.id) && <button type="button" onClick={() => openEdit(item)}>
                           <Pencil size={16} aria-hidden="true" />
                           Editar
-                        </button>
-                        <button type="button" onClick={() => handleDelete(item)}>
+                        </button>}
+                        {canDelete && <button type="button" onClick={() => handleDelete(item)}>
                           <Trash2 size={16} aria-hidden="true" />
                           Eliminar
-                        </button>
+                        </button>}
                       </>
                     )}
                     <PlanningHistoryButton proposal={item} />

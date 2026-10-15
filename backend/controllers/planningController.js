@@ -151,6 +151,9 @@ const createProposal = async (req, res) => {
 const updateProposal = async (req, res) => {
   const current = await planningRepository.findById(req.params.id);
   if (!current) return res.status(404).json({ message: "Propuesta no encontrada." });
+  if (req.user.role === ROLES.JEFATURA && current.createdBy?.id !== req.user.id) {
+    return res.status(403).json({ message: "Solo puedes editar las propuestas que creaste." });
+  }
   if (isTerminal(current)) {
     return res.status(409).json({ message: "Una propuesta resuelta ya no se puede editar." });
   }

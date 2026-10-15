@@ -20,7 +20,7 @@ export const dashboardSummary = (role = "DIRECTOR") => {
       count: likelihood === 3 && impact === 2 ? 1 : 0
     }))),
     pendingItems: [{ id: "AUD-TEST", title: "Auditoría de prueba", area: "Operaciones", status: auditor ? "ACTIVE" : "OPEN", risk: "Alto", quarter: "Q2", year: 2026, progress: 20 }],
-    permissions: { canCreate: ["SUPER_ADMIN", "DIRECTOR", "GERENTE"].includes(role), canApprove: ["SUPER_ADMIN", "DIRECTOR"].includes(role), canManageExecution: ["SUPER_ADMIN", "DIRECTOR"].includes(role) }
+    permissions: { canCreate: ["SUPER_ADMIN", "DIRECTOR", "GERENTE", "JEFATURA"].includes(role), canApprove: ["SUPER_ADMIN", "DIRECTOR"].includes(role), canManageExecution: ["SUPER_ADMIN", "DIRECTOR"].includes(role) }
   };
 };
 

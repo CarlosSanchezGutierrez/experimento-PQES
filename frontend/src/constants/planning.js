@@ -13,8 +13,10 @@ export const RISK_FACTORS = [
   { value: 3, label: "Alta" }
 ];
 
-// Debe coincidir con PLANNING_CREATE_ROLES / PLANNING_APPROVE_ROLES del backend.
-export const PLANNING_CREATE_ROLES = ["SUPER_ADMIN", "DIRECTOR", "GERENTE"];
+// Debe coincidir con los permisos de propuestas del backend.
+export const RISK_CONTROL_MANAGE_ROLES = ["SUPER_ADMIN", "DIRECTOR", "GERENTE"];
+export const AUDIT_PROPOSAL_CREATE_ROLES = ["SUPER_ADMIN", "DIRECTOR", "GERENTE", "JEFATURA"];
+export const AUDIT_PROPOSAL_DELETE_ROLES = ["SUPER_ADMIN"];
 export const PLANNING_APPROVE_ROLES = ["SUPER_ADMIN", "DIRECTOR"];
 
 export const EDITABLE_FIELDS_BY_STATUS = {
