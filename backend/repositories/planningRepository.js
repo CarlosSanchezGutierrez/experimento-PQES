@@ -151,4 +151,10 @@ const remove = (id) => {
   return removed;
 };
 
-module.exports = { getAll, findById, findDuplicate, create, update, approve, start, close, reject, remove };
+const memoryRepository = { getAll, findById, findDuplicate, create, update, approve, start, close, reject, remove };
+if (process.env.VERA_PLANNING_STORE && !["memory", "supabase"].includes(process.env.VERA_PLANNING_STORE)) {
+  throw new Error("VERA_PLANNING_STORE debe ser memory o supabase.");
+}
+module.exports = process.env.VERA_PLANNING_STORE === "supabase"
+  ? require("./supabasePlanningRepository")
+  : memoryRepository;

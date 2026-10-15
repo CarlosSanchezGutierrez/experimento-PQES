@@ -90,8 +90,8 @@ const parseProposal = (body) => {
 };
 
 // GET /api/planning
-const listProposals = (req, res) => {
-  const proposals = planningRepository.getAll();
+const listProposals = async (req, res) => {
+  const proposals = await planningRepository.getAll();
   const visible = req.user.role === ROLES.AUDITOR
     ? proposals.filter((proposal) => proposal.responsibleId === req.user.id)
     : proposals;
@@ -99,8 +99,8 @@ const listProposals = (req, res) => {
 };
 
 // GET /api/planning/active
-const listActiveAudits = (req, res) => {
-  const audits = planningRepository.getAll().filter((item) =>
+const listActiveAudits = async (req, res) => {
+  const audits = (await planningRepository.getAll()).filter((item) =>
     item.status === "ACTIVE" && (req.user.role !== ROLES.AUDITOR || item.responsibleId === req.user.id)
   );
   res.json({ audits });
@@ -112,15 +112,15 @@ const listAuditors = (req, res) => {
 };
 
 // POST /api/planning
-const createProposal = (req, res) => {
+const createProposal = async (req, res) => {
   const { data, error } = parseProposal(req.body);
   if (error) return res.status(400).json({ message: error });
 
-  if (planningRepository.findDuplicate(data)) {
+  if (await planningRepository.findDuplicate(data)) {
     return res.status(409).json({ message: DUPLICATE_MESSAGE });
   }
 
-  const proposal = planningRepository.create({
+  const proposal = await planningRepository.create({
     ...data,
     createdBy: { id: req.user.id, name: req.user.username }
   });
@@ -135,8 +135,8 @@ const createProposal = (req, res) => {
 };
 
 // PUT /api/planning/:id  (solo propuestas abiertas)
-const updateProposal = (req, res) => {
-  const current = planningRepository.findById(req.params.id);
+const updateProposal = async (req, res) => {
+  const current = await planningRepository.findById(req.params.id);
   if (!current) return res.status(404).json({ message: "Propuesta no encontrada." });
   if (isTerminal(current)) {
     return res.status(409).json({ message: "Una propuesta resuelta ya no se puede editar." });
@@ -145,11 +145,11 @@ const updateProposal = (req, res) => {
   const { data, error } = parseProposal(req.body);
   if (error) return res.status(400).json({ message: error });
 
-  if (planningRepository.findDuplicate(data, current.id)) {
+  if (await planningRepository.findDuplicate(data, current.id)) {
     return res.status(409).json({ message: DUPLICATE_MESSAGE });
   }
 
-  const proposal = planningRepository.update(current.id, data);
+  const proposal = await planningRepository.update(current.id, data, current.storageVersion);
 
   logActivity({
     actor: req.user,
@@ -161,8 +161,8 @@ const updateProposal = (req, res) => {
 };
 
 // POST /api/planning/:id/approve
-const approveProposal = (req, res) => {
-  const current = planningRepository.findById(req.params.id);
+const approveProposal = async (req, res) => {
+  const current = await planningRepository.findById(req.params.id);
   if (!current) return res.status(404).json({ message: "Propuesta no encontrada." });
   if (isTerminal(current)) {
     return res.status(409).json({ message: "Esta propuesta ya fue resuelta." });
@@ -173,10 +173,10 @@ const approveProposal = (req, res) => {
     return res.status(400).json({ message: "Selecciona un trimestre para completar la aprobación." });
   }
 
-  const proposal = planningRepository.approve(current.id, {
+  const proposal = await planningRepository.approve(current.id, {
     quarter,
     approvedBy: { id: req.user.id, name: req.user.username }
-  });
+  }, current.storageVersion);
 
   logActivity({
     actor: req.user,
@@ -188,16 +188,16 @@ const approveProposal = (req, res) => {
 };
 
 // POST /api/planning/:id/start
-const startAudit = (req, res) => {
-  const current = planningRepository.findById(req.params.id);
+const startAudit = async (req, res) => {
+  const current = await planningRepository.findById(req.params.id);
   if (!current) return res.status(404).json({ message: "Auditoría no encontrada." });
   if (current.status !== "APPROVED") {
     return res.status(409).json({ message: "Solo se pueden iniciar auditorías aprobadas y pendientes de ejecución." });
   }
 
-  const audit = planningRepository.start(current.id, {
+  const audit = await planningRepository.start(current.id, {
     startedBy: { id: req.user.id, name: req.user.username }
-  });
+  }, current.storageVersion);
   logActivity({
     actor: req.user,
     action: "AUDIT_STARTED",
@@ -207,16 +207,16 @@ const startAudit = (req, res) => {
 };
 
 // POST /api/planning/:id/close
-const closeAudit = (req, res) => {
-  const current = planningRepository.findById(req.params.id);
+const closeAudit = async (req, res) => {
+  const current = await planningRepository.findById(req.params.id);
   if (!current) return res.status(404).json({ message: "Auditoría no encontrada." });
   if (current.status !== "ACTIVE") {
     return res.status(409).json({ message: "Solo se pueden cerrar auditorías en curso." });
   }
 
-  const audit = planningRepository.close(current.id, {
+  const audit = await planningRepository.close(current.id, {
     closedBy: { id: req.user.id, name: req.user.username }
-  });
+  }, current.storageVersion);
   logActivity({
     actor: req.user,
     action: "AUDIT_CLOSED",
@@ -226,8 +226,8 @@ const closeAudit = (req, res) => {
 };
 
 // POST /api/planning/:id/reject
-const rejectProposal = (req, res) => {
-  const current = planningRepository.findById(req.params.id);
+const rejectProposal = async (req, res) => {
+  const current = await planningRepository.findById(req.params.id);
   if (!current) return res.status(404).json({ message: "Propuesta no encontrada." });
   if (isTerminal(current)) {
     return res.status(409).json({ message: "Esta propuesta ya fue resuelta." });
@@ -238,10 +238,10 @@ const rejectProposal = (req, res) => {
     return res.status(400).json({ message: "Escribe el motivo del rechazo." });
   }
 
-  const proposal = planningRepository.reject(current.id, {
+  const proposal = await planningRepository.reject(current.id, {
     rejectionReason,
     rejectedBy: { id: req.user.id, name: req.user.username }
-  });
+  }, current.storageVersion);
 
   logActivity({
     actor: req.user,
@@ -253,14 +253,14 @@ const rejectProposal = (req, res) => {
 };
 
 // DELETE /api/planning/:id  (solo propuestas abiertas)
-const deleteProposal = (req, res) => {
-  const current = planningRepository.findById(req.params.id);
+const deleteProposal = async (req, res) => {
+  const current = await planningRepository.findById(req.params.id);
   if (!current) return res.status(404).json({ message: "Propuesta no encontrada." });
   if (isTerminal(current)) {
     return res.status(409).json({ message: "Una propuesta resuelta ya no se puede eliminar." });
   }
 
-  planningRepository.remove(current.id);
+  await planningRepository.remove(current.id, current.storageVersion);
 
   logActivity({
     actor: req.user,
@@ -273,8 +273,8 @@ const deleteProposal = (req, res) => {
 
 // PATCH /api/planning/:id/details  (HU-12)
 // Edita una auditoría aprobada o en curso. Solo acepta los campos permitidos para su estado.
-const editAudit = (req, res) => {
-  const current = planningRepository.findById(req.params.id);
+const editAudit = async (req, res) => {
+  const current = await planningRepository.findById(req.params.id);
   if (!current) return res.status(404).json({ message: "Auditoría no encontrada." });
 
   const allowed = EDITABLE_FIELDS_BY_STATUS[current.status];
@@ -322,7 +322,7 @@ const editAudit = (req, res) => {
     update.risk = data.risk;
   }
 
-  const audit = planningRepository.update(current.id, update);
+  const audit = await planningRepository.update(current.id, update, current.storageVersion);
 
   logActivity({
     actor: req.user,

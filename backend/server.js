@@ -48,6 +48,11 @@ app.get("/", (req, res) => {
   });
 });
 
+app.use((error, req, res, next) => {
+  if (error.planningStorage) return res.status(error.status).json({ message: error.message });
+  next(error);
+});
+
 const PORT = process.env.PORT || 3000;
 
 if (require.main === module) {
