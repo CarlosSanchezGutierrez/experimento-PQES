@@ -1,4 +1,4 @@
-const { PLANNING_APPROVE_ROLES, PLANNING_CREATE_ROLES } = require("../config/roles");
+const { PLANNING_APPROVE_ROLES, AUDIT_PROPOSAL_CREATE_ROLES } = require("../config/roles");
 const { classifyRisk } = require("../config/riskRules");
 
 const dashboardCopy = {
@@ -24,8 +24,8 @@ const dashboardCopy = {
   },
   JEFATURA: {
     title: "Seguimiento del portafolio",
-    description: "Consulta el estado general y las prioridades de auditoría.",
-    scopeLabel: "Vista de consulta"
+    description: "Propón auditorías y consulta las prioridades del portafolio.",
+    scopeLabel: "Planeación y seguimiento"
   }
 };
 
@@ -49,13 +49,18 @@ const getDashboardForUser = (user, proposals) => {
       count: activeAudits.filter((audit) => (audit.likelihood ?? 2) === likelihood && (audit.impact ?? 2) === impact).length
     };
   }));
-  const pendingItems = PLANNING_APPROVE_ROLES.includes(user.role)
-    ? visibleProposals.filter((proposal) => proposal.status === "OPEN")
-    : user.role === "AUDITOR"
-      ? visibleProposals.filter((proposal) => ["OPEN", "APPROVED", "ACTIVE"].includes(proposal.status))
-      : PLANNING_CREATE_ROLES.includes(user.role)
-        ? visibleProposals.filter((proposal) => proposal.status === "OPEN")
-        : visibleProposals.filter((proposal) => proposal.status === "ACTIVE");
+  let pendingItems;
+  if (PLANNING_APPROVE_ROLES.includes(user.role)) {
+    pendingItems = visibleProposals.filter((proposal) => proposal.status === "OPEN");
+  } else if (user.role === "AUDITOR") {
+    pendingItems = visibleProposals.filter((proposal) => ["OPEN", "APPROVED", "ACTIVE"].includes(proposal.status));
+  } else if (user.role === "JEFATURA") {
+    pendingItems = visibleProposals.filter((proposal) => proposal.status === "OPEN" && proposal.createdBy?.id === user.id);
+  } else if (AUDIT_PROPOSAL_CREATE_ROLES.includes(user.role)) {
+    pendingItems = visibleProposals.filter((proposal) => proposal.status === "OPEN");
+  } else {
+    pendingItems = visibleProposals.filter((proposal) => proposal.status === "ACTIVE");
+  }
 
   const heading = dashboardCopy[user.role] || dashboardCopy.JEFATURA;
   return {
@@ -83,7 +88,7 @@ const getDashboardForUser = (user, proposals) => {
       progress: proposal.progress ?? 0
     })),
     permissions: {
-      canCreate: PLANNING_CREATE_ROLES.includes(user.role),
+      canCreate: AUDIT_PROPOSAL_CREATE_ROLES.includes(user.role),
       canApprove: PLANNING_APPROVE_ROLES.includes(user.role),
       canManageExecution: PLANNING_APPROVE_ROLES.includes(user.role)
     }

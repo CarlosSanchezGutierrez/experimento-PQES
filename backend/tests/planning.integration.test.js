@@ -117,8 +117,59 @@ test("HU-22: only authorized roles can create proposals and anonymous users cann
     const cannotApprove = await fetch(`${baseUrl}/api/planning/${proposal.id}/approve`, json(managerToken, "POST", { quarter: "Q1" }));
     assert.equal(cannotApprove.status, 403);
 
-    const deleted = await fetch(`${baseUrl}/api/planning/${proposal.id}`, json(tokenFor(2), "DELETE"));
+    const deniedDeletion = await fetch(`${baseUrl}/api/planning/${proposal.id}`, json(tokenFor(2), "DELETE"));
+    assert.equal(deniedDeletion.status, 403);
+    const deleted = await fetch(`${baseUrl}/api/planning/${proposal.id}`, json(tokenFor(1), "DELETE"));
     assert.equal(deleted.status, 200);
+  });
+});
+
+test("HU-11: jefatura proposes and edits own work; approval and deletion remain separated", async (context) => {
+  await withServer(context, async (baseUrl) => {
+    const jefatura = tokenFor(4);
+    const auditor = tokenFor(5);
+    const manager = tokenFor(3);
+    const director = tokenFor(2);
+    const admin = tokenFor(1);
+    const body = {
+      title: `HU-11 jefatura ${Date.now()}`,
+      objective: "Comprobar el alcance de una auditoría propuesta.",
+      scope: "Procesos de compras.",
+      justification: "La matriz permite crear a jefatura.",
+      area: "Compras",
+      year: 2026,
+      quarter: "Q2"
+    };
+
+    assert.equal((await fetch(`${baseUrl}/api/planning/auditors`, json(jefatura))).status, 200);
+    assert.equal((await fetch(`${baseUrl}/api/planning`, json(auditor, "POST", body))).status, 403);
+    const createdResponse = await fetch(`${baseUrl}/api/planning`, json(jefatura, "POST", body));
+    assert.equal(createdResponse.status, 201);
+    const proposal = (await createdResponse.json()).proposal;
+    assert.equal(proposal.createdBy.id, 4);
+    assert.equal(proposal.status, "OPEN");
+
+    const ownEdit = await fetch(`${baseUrl}/api/planning/${proposal.id}`, json(jefatura, "PUT", { ...body, objective: "Comprobar compras y autorizaciones." }));
+    assert.equal(ownEdit.status, 200);
+    assert.equal((await ownEdit.json()).proposal.objective, "Comprobar compras y autorizaciones.");
+    assert.equal((await fetch(`${baseUrl}/api/planning/${proposal.id}/approve`, json(jefatura, "POST", { quarter: "Q2" }))).status, 403);
+    assert.equal((await fetch(`${baseUrl}/api/planning/${proposal.id}/start`, json(jefatura, "POST", {}))).status, 403);
+    for (const token of [jefatura, manager, director]) {
+      assert.equal((await fetch(`${baseUrl}/api/planning/${proposal.id}`, json(token, "DELETE"))).status, 403);
+    }
+
+    const otherResponse = await fetch(`${baseUrl}/api/planning`, json(manager, "POST", { ...body, title: `${body.title} otro` }));
+    assert.equal(otherResponse.status, 201);
+    const other = (await otherResponse.json()).proposal;
+    assert.equal((await fetch(`${baseUrl}/api/planning/${other.id}`, json(jefatura, "PUT", body))).status, 403);
+
+    const approved = await fetch(`${baseUrl}/api/planning/${proposal.id}/approve`, json(director, "POST", { quarter: "Q2" }));
+    assert.equal(approved.status, 200);
+    assert.equal((await approved.json()).proposal.status, "APPROVED");
+    const started = await fetch(`${baseUrl}/api/planning/${proposal.id}/start`, json(director, "POST", {}));
+    assert.equal(started.status, 200);
+    assert.equal((await started.json()).audit.status, "ACTIVE");
+    assert.equal((await fetch(`${baseUrl}/api/planning/${other.id}`, json(admin, "DELETE"))).status, 200);
   });
 });
 
@@ -160,8 +211,10 @@ test("HU-23: rejection requires a reason, records the decision and makes the pro
     assert.equal(edit.status, 409);
     const approve = await fetch(`${baseUrl}/api/planning/${proposal.id}/approve`, json(directorToken, "POST", { quarter: "Q2" }));
     assert.equal(approve.status, 409);
-    const remove = await fetch(`${baseUrl}/api/planning/${proposal.id}`, json(managerToken, "DELETE"));
-    assert.equal(remove.status, 409);
+    const forbiddenRemove = await fetch(`${baseUrl}/api/planning/${proposal.id}`, json(managerToken, "DELETE"));
+    assert.equal(forbiddenRemove.status, 403);
+    const terminalRemove = await fetch(`${baseUrl}/api/planning/${proposal.id}`, json(tokenFor(1), "DELETE"));
+    assert.equal(terminalRemove.status, 409);
   });
 });
 

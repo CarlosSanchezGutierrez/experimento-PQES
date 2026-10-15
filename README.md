@@ -96,6 +96,8 @@ El workflow **VERA — Calidad y pruebas completas** ejecuta en una sola corrida
 
 El flujo permite crear propuestas con título, objetivo, alcance, justificación, área, tipo, nivel de riesgo, año y periodo estimado (trimestre o ambas fechas). También admite responsable. El backend exige estos datos, limita alcance y justificación a 2000 caracteres, valida catálogos, fechas, auditor responsable activo y duplicados por título, área y año. Las propuestas empiezan abiertas y quedan disponibles para revisión; se pueden editar mientras sigan abiertas y solo roles `SUPER_ADMIN` o `DIRECTOR` pueden aprobarlas. La aprobación requiere un trimestre válido y fija el avance en 100%; una propuesta aprobada queda protegida contra edición y eliminación. Las propuestas históricas sin alcance o justificación deben completarse al editarlas.
 
+Para HU-11, `JEFATURA` puede crear propuestas y editar solo las propias mientras sigan abiertas. `AUDITOR` puede consultar sus asignaciones, pero no crear propuestas. Solo `SUPER_ADMIN` puede eliminar propuestas abiertas. Los permisos de propuestas están separados de los de riesgos y controles, que conservan sus roles actuales. La correspondencia con la matriz CRUD recibida y sus límites se documenta en [Permisos de auditorías y matriz CRUD](docs/permissions/hu11-crud-mapping.md).
+
 Las pruebas de integración de `backend/tests/planning.integration.test.js` verifican el flujo HTTP de creación, validación, duplicidad, edición, aprobación y permisos. Se ejecutan con `npm run test:coverage --prefix backend` y forman parte de `npm run quality`.
 
 ### HU-12: edición de auditorías
@@ -112,7 +114,7 @@ La planificación captura probabilidad e impacto en una escala de 1 (bajo) a 3 (
 
 ### HU-07: panel principal por rol
 
-`GET /api/dashboard` requiere sesión y devuelve métricas, conteos por estado, matriz activa, pendientes y permisos calculados desde el portafolio. Super Admin y Dirección ven la cola global de decisiones; Gerencia, el seguimiento de propuestas; Auditoría, solo registros asignados por `responsibleId`; Jefatura, una vista general de consulta. La interfaz muestra KPIs, barras de estado, matriz de riesgo 3 × 3 y acciones rápidas filtradas por permisos; los valores se consultan de nuevo al actualizar y no están hardcodeados. Las pruebas de integración verifican autenticación, alcance de auditoría y permisos. No se muestran horas ni hallazgos porque el modelo actual no contiene fuentes de esos datos; así se evita presentar estadísticas inventadas.
+`GET /api/dashboard` requiere sesión y devuelve métricas, conteos por estado, matriz activa, pendientes y permisos calculados desde el portafolio. Super Admin y Dirección ven la cola global de decisiones; Gerencia y Jefatura pueden dar seguimiento y proponer auditorías; Auditoría ve solo registros asignados por `responsibleId`. La interfaz muestra KPIs, barras de estado, matriz de riesgo 3 × 3 y acciones rápidas filtradas por permisos; los valores se consultan de nuevo al actualizar y no están hardcodeados. Las pruebas de integración verifican autenticación, alcance de auditoría y permisos. No se muestran horas ni hallazgos porque el modelo actual no contiene fuentes de esos datos; así se evita presentar estadísticas inventadas.
 
 Con `VERA_PLANNING_STORE=supabase`, esos conteos y pendientes de propuestas se calculan desde auditorías persistidas en Supabase. La [guía de activación](docs/supabase-planning.md) explica los pasos y los dominios que aún siguen en memoria.
 

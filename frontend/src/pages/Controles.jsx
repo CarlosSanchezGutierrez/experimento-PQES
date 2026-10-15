@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Activity, CheckCircle2, ClipboardCheck, Pencil, Plus, Shield, X } from "lucide-react";
 import Sidebar from "../components/Sidebar";
-import { PLANNING_CREATE_ROLES } from "../constants/planning";
+import { RISK_CONTROL_MANAGE_ROLES } from "../constants/planning";
 import { createControl, evaluateControl, getControls, updateControl } from "../services/controlService";
 import { getRisks, getRiskOwners } from "../services/riskService";
 import "./Controles.css";
@@ -12,7 +12,7 @@ const RATING_LABELS = ["Muy débil", "Débil", "Parcial", "Efectivo", "Muy efect
 
 function Controles() {
   const user = JSON.parse(localStorage.getItem("user") || "null");
-  const canManage = PLANNING_CREATE_ROLES.includes(user?.role);
+  const canManage = RISK_CONTROL_MANAGE_ROLES.includes(user?.role);
   const [controls, setControls] = useState([]);
   const [risks, setRisks] = useState([]);
   const [owners, setOwners] = useState([]);

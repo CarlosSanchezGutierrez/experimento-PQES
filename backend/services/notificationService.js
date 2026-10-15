@@ -1,4 +1,4 @@
-const { ROLES, PLANNING_APPROVE_ROLES, PLANNING_CREATE_ROLES } = require("../config/roles");
+const { ROLES, PLANNING_APPROVE_ROLES } = require("../config/roles");
 
 const isWithinDays = (date, now, days) => {
   if (!date) return false;
@@ -9,7 +9,7 @@ const isWithinDays = (date, now, days) => {
 const buildNotifications = ({ proposals, user, now = Date.now() }) => {
   const notifications = [];
   const isApprover = PLANNING_APPROVE_ROLES.includes(user.role);
-  const canManage = PLANNING_CREATE_ROLES.includes(user.role);
+  const canStart = isApprover;
 
   for (const proposal of proposals) {
     if (proposal.status === "OPEN" && isApprover) {
@@ -26,7 +26,7 @@ const buildNotifications = ({ proposals, user, now = Date.now() }) => {
       });
     }
 
-    if (proposal.status === "OPEN" && user.role === ROLES.GERENTE && proposal.createdBy?.id === user.id) {
+    if (proposal.status === "OPEN" && [ROLES.GERENTE, ROLES.JEFATURA].includes(user.role) && proposal.createdBy?.id === user.id) {
       notifications.push({
         id: `PROPOSAL_TRACK:${proposal.id}`,
         type: "PROPOSAL_TRACK",
@@ -40,7 +40,7 @@ const buildNotifications = ({ proposals, user, now = Date.now() }) => {
       });
     }
 
-    if (proposal.status === "APPROVED" && canManage) {
+    if (proposal.status === "APPROVED" && canStart) {
       notifications.push({
         id: `AUDIT_START:${proposal.id}`,
         type: "AUDIT_START",
