@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Activity, CheckCircle2, Pencil, Play, RefreshCw } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Activity, ArrowLeft, ArrowRight, CheckCircle2, ClipboardCheck, FileText, Flag, LockKeyhole, Pencil, Play, RefreshCw, ShieldAlert, Target } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import PlanningHistoryButton from "../components/PlanningHistoryButton";
 import EditAuditModal from "../components/EditAuditModal";
@@ -7,6 +8,7 @@ import { PLANNING_APPROVE_ROLES, RISK_FACTORS } from "../constants/planning";
 import { closeAudit, getActiveAudits, getPlanningAudits, startAudit } from "../services/planningService";
 import { getRisks } from "../services/riskService";
 import { getControls } from "../services/controlService";
+import { getEvidence } from "../services/evidenceService";
 import "./Planning.css";
 
 const riskFor = (likelihood, impact) => {
@@ -15,6 +17,9 @@ const riskFor = (likelihood, impact) => {
 };
 
 function AuditoriasActivas() {
+  const navigate = useNavigate();
+  const { auditId } = useParams();
+  const isGovernanceRoute = Boolean(auditId);
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const canManage = PLANNING_APPROVE_ROLES.includes(user?.role);
   const [activeAudits, setActiveAudits] = useState([]);
@@ -27,16 +32,21 @@ function AuditoriasActivas() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [editingAudit, setEditingAudit] = useState(null);
+  const [selectedAudit, setSelectedAudit] = useState(null);
+  const [activeStep, setActiveStep] = useState("execution");
+  const [activeTab, setActiveTab] = useState("summary");
+  const [evidence, setEvidence] = useState([]);
 
   const refresh = useCallback(async () => {
     try {
-      const [active, proposals, linkedRisks, linkedControls] = await Promise.all([
-        getActiveAudits(), getPlanningAudits(), getRisks(), getControls()
+      const [active, proposals, linkedRisks, linkedControls, allEvidence] = await Promise.all([
+        getActiveAudits(), getPlanningAudits(), getRisks(), getControls(), getEvidence()
       ]);
       setActiveAudits(active);
       setApprovedAudits(proposals.filter((item) => item.status === "APPROVED"));
       setRisks(linkedRisks);
       setControls(linkedControls);
+      setEvidence(allEvidence);
       setError("");
     } catch (loadError) {
       setError(loadError.message);
@@ -47,13 +57,22 @@ function AuditoriasActivas() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getActiveAudits(), getPlanningAudits(), getRisks(), getControls()])
-      .then(([active, proposals, linkedRisks, linkedControls]) => {
+    Promise.all([getActiveAudits(), getPlanningAudits(), getRisks(), getControls(), getEvidence()])
+      .then(([active, proposals, linkedRisks, linkedControls, allEvidence]) => {
         if (cancelled) return;
         setActiveAudits(active);
         setApprovedAudits(proposals.filter((item) => item.status === "APPROVED"));
         setRisks(linkedRisks);
         setControls(linkedControls);
+        setEvidence(allEvidence);
+        if (auditId) {
+          const auditFromRoute = decodeURIComponent(auditId);
+          const auditFromHash = active.find((item) => item.id === auditFromRoute);
+          if (auditFromHash) {
+            setSelectedAudit(auditFromHash);
+            setActiveStep("annual");
+          }
+        }
         setError("");
       })
       .catch((loadError) => {
@@ -63,7 +82,40 @@ function AuditoriasActivas() {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [auditId]);
+
+  const governanceSteps = [
+    { id: "annual", label: "Plan anual", icon: Target },
+    { id: "quarterly", label: "Plan trimestral", icon: ClipboardCheck },
+    { id: "start", label: "Inicio", icon: Flag },
+    { id: "kickoff", label: "Kickoff", icon: Activity },
+    { id: "understanding", label: "Understanding", icon: FileText },
+    { id: "execution", label: "Ejecución y progreso", icon: ShieldAlert },
+    { id: "supervision", label: "Supervisión", icon: Activity },
+    { id: "closure", label: "Cierre", icon: CheckCircle2 },
+    { id: "report", label: "Reporte", icon: FileText, locked: true },
+    { id: "followup", label: "Follow-up", icon: LockKeyhole, locked: true }
+  ];
+  const currentStepIndex = governanceSteps.findIndex((step) => step.id === activeStep);
+  const nextGovernanceStep = governanceSteps[currentStepIndex + 1];
+
+  const openAudit = (audit) => {
+    navigate(`/auditorias-activas/${encodeURIComponent(audit.id)}`);
+  };
+
+  const closeAuditWorkspace = () => {
+    navigate("/auditorias-activas");
+  };
+
+  const continueGovernance = () => {
+    if (!nextGovernanceStep || nextGovernanceStep.locked) return;
+    setActiveStep(nextGovernanceStep.id);
+    setActiveTab("summary");
+  };
+
+  const linkedRisks = selectedAudit ? risks.filter((item) => item.linkedAuditId === selectedAudit.id) : [];
+  const linkedControls = selectedAudit ? controls.filter((item) => linkedRisks.some((risk) => item.riskIds?.includes(risk.id))) : [];
+  const linkedEvidence = selectedAudit ? evidence.filter((item) => item.auditId === selectedAudit.id || item.linkedAuditId === selectedAudit.id) : [];
 
   const runTransition = async (id, action, successMessage) => {
     setBusyId(id);
@@ -101,10 +153,10 @@ function AuditoriasActivas() {
   ) : [];
 
   return (
-    <div className="dashboard-layout">
+    <div className={`dashboard-layout ${isGovernanceRoute ? "governance-layout" : ""}`}>
       <Sidebar active="auditorias-activas" />
       <main className="dashboard-main">
-        <section className="dashboard-content planning-page clean-header-page active-audits-page">
+        <section className={`dashboard-content planning-page clean-header-page active-audits-page ${isGovernanceRoute ? "governance-route" : ""}`}>
           <div className="dashboard-header">
             <div>
               <span className="eyebrow">EJECUCIÓN Y RIESGO</span>
@@ -187,7 +239,7 @@ function AuditoriasActivas() {
                         <p>Controles asociados: {relatedControls.length ? relatedControls.map((control) => `${control.id} · ${control.title} (${control.effectiveness}/5)`).join(", ") : "ninguno registrado"}.</p>
                       </div>;
                     }) : <p>No hay riesgos registrados vinculados a esta auditoría.</p>}
-                    <a href={`#audit-${audit.id}`}>Ir a la auditoría {audit.id}</a>
+                    <button type="button" className="matrix-audit-open" onClick={() => openAudit(audit)}>Abrir expediente</button>
                   </article>;
                 })}
               </section>
@@ -203,7 +255,7 @@ function AuditoriasActivas() {
           ) : (
             <div className="planning-list">
               {activeAudits.map((audit) => (
-                <article className="planning-card active-audit-card" id={`audit-${audit.id}`} key={audit.id}>
+                <article className="planning-card active-audit-card" id={`audit-${audit.id}`} key={audit.id} onClick={() => openAudit(audit)}>
                   <div className="planning-card-icon"><Activity size={21} aria-hidden="true" /></div>
                   <div className="planning-card-content">
                     <div className="proposal-heading">
@@ -221,7 +273,7 @@ function AuditoriasActivas() {
                       <span><b>Probabilidad / impacto:</b> {factorLabel(audit.likelihood ?? 2)} / {factorLabel(audit.impact ?? 2)}</span>
                     </div>
                   </div>
-                  <div className="planning-card-actions">
+                  <div className="planning-card-actions" onClick={(event) => event.stopPropagation()}>
                     {canManage && <button type="button" onClick={() => runTransition(audit.id, closeAudit, "Auditoría cerrada.")} disabled={busyId === audit.id}>
                       <CheckCircle2 size={16} aria-hidden="true" />{busyId === audit.id ? "Guardando..." : "Cerrar auditoría"}
                     </button>}
@@ -258,6 +310,113 @@ function AuditoriasActivas() {
                   </div>
                 </article>
               ))}
+            </div>
+          )}
+
+          {selectedAudit && (
+            <div className="governance-backdrop" role="presentation" onMouseDown={(event) => {
+              if (event.target === event.currentTarget) closeAuditWorkspace();
+            }}>
+              <section className="governance-workspace" role="dialog" aria-modal="true" aria-labelledby="governance-title">
+                <header className="governance-header">
+                  <button type="button" className="governance-back" onClick={closeAuditWorkspace}>
+                    <ArrowLeft size={18} aria-hidden="true" /> Volver a auditorías
+                  </button>
+                  <div className="governance-heading">
+                    <div>
+                      <h2 id="governance-title">{selectedAudit.title}</h2>
+                      <span className="planning-id">{selectedAudit.id} · {selectedAudit.area}</span>
+                    </div>
+                    <div className="governance-progress">
+                      <span>PROGRESO GENERAL</span>
+                      <strong>{selectedAudit.progress ?? 0}%</strong>
+                    </div>
+                  </div>
+                </header>
+
+                <div className="governance-body">
+                  <aside className="governance-sidebar">
+                    <span className="eyebrow">FLUJO DE GOBIERNO</span>
+                    {governanceSteps.map(({ id, label, icon: Icon, locked }, index) => (
+                      <button
+                        type="button"
+                        key={id}
+                        className={`governance-step ${activeStep === id ? "is-active" : ""} ${index < currentStepIndex ? "is-complete" : ""} ${locked || index !== currentStepIndex ? "is-locked" : ""}`}
+                        disabled={locked || index !== currentStepIndex}
+                      >
+                        {locked ? <LockKeyhole size={16} /> : <Icon size={16} />}
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </aside>
+
+                  <div className="governance-content">
+                    <div className="governance-stage">
+                      <span className="eyebrow">PASO {governanceSteps.findIndex((step) => step.id === activeStep) + 1} · {governanceSteps.find((step) => step.id === activeStep)?.label.toUpperCase()}</span>
+                      <h3>{activeStep === "closure" ? "Cierre y comunicación" : activeStep === "execution" ? "Ejecución y progreso" : governanceSteps.find((step) => step.id === activeStep)?.label}</h3>
+                      <p>{activeStep === "execution" ? "Documenta riesgos, controles, evidencias y el avance de la auditoría." : "Completa esta etapa y continúa con el siguiente paso del flujo."}</p>
+                      {nextGovernanceStep && !nextGovernanceStep.locked && (
+                        <button type="button" className="governance-continue" onClick={continueGovernance}>
+                          Continuar a {nextGovernanceStep.label}
+                          <ArrowRight size={17} aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+
+                    <nav className="governance-tabs" aria-label="Secciones del expediente">
+                      {[
+                        ["summary", "Resumen", Target],
+                        ["risks", "Riesgos", ShieldAlert],
+                        ["controls", "Controles", ClipboardCheck],
+                        ["findings", "Hallazgos", Flag],
+                        ["evidence", "Evidencias", FileText],
+                        ["activity", "Actividad", Activity]
+                      ].map(([id, label, Icon]) => (
+                        <button type="button" key={id} className={activeTab === id ? "is-active" : ""} onClick={() => setActiveTab(id)}>
+                          <Icon size={16} /> {label}
+                          {id === "risks" && linkedRisks.length > 0 && <small>{linkedRisks.length}</small>}
+                          {id === "controls" && linkedControls.length > 0 && <small>{linkedControls.length}</small>}
+                        </button>
+                      ))}
+                    </nav>
+
+                    <div className="governance-panel">
+                      {activeTab === "summary" && (
+                        <>
+                          <h3>Resumen de auditoría</h3>
+                          <p>{selectedAudit.objective || "Sin objetivo registrado."}</p>
+                          <div className="governance-info-grid">
+                            <div><span>Responsable</span><strong>{selectedAudit.responsible || "Sin asignar"}</strong></div>
+                            <div><span>Tipo</span><strong>{selectedAudit.type}</strong></div>
+                            <div><span>Periodo</span><strong>{selectedAudit.startDate || "—"} → {selectedAudit.endDate || "—"}</strong></div>
+                            <div><span>Estado</span><strong>{selectedAudit.status}</strong></div>
+                          </div>
+                        </>
+                      )}
+                      {activeTab === "risks" && (
+                        <>
+                          <h3>Riesgos vinculados</h3>
+                          {linkedRisks.length ? linkedRisks.map((risk) => <article className="governance-record" key={risk.id}><strong>{risk.id} · {risk.title}</strong><p>{risk.description}</p><span>Nivel {risk.level} · {risk.score}/9</span></article>) : <p>No hay riesgos registrados para esta auditoría.</p>}
+                        </>
+                      )}
+                      {activeTab === "controls" && (
+                        <>
+                          <h3>Controles</h3>
+                          {linkedControls.length ? linkedControls.map((control) => <article className="governance-record" key={control.id}><strong>{control.id} · {control.title}</strong><p>{control.description || "Control registrado en el expediente."}</p><span>Resultado: {control.effectiveness ?? "Sin evaluar"}</span></article>) : <p>No hay controles vinculados a los riesgos de esta auditoría.</p>}
+                        </>
+                      )}
+                      {activeTab === "findings" && <><h3>Hallazgos</h3><p>No hay hallazgos registrados para esta auditoría.</p></>}
+                      {activeTab === "evidence" && (
+                        <>
+                          <h3>Evidencias</h3>
+                          {linkedEvidence.length ? linkedEvidence.map((item) => <article className="governance-record" key={item.id}><strong>{item.id} · {item.title}</strong><p>{item.description || item.reference || "Evidencia registrada."}</p></article>) : <p>No hay evidencias vinculadas a esta auditoría.</p>}
+                        </>
+                      )}
+                      {activeTab === "activity" && <><h3>Actividad del expediente</h3><PlanningHistoryButton proposal={selectedAudit} /></>}
+                    </div>
+                  </div>
+                </div>
+              </section>
             </div>
           )}
 

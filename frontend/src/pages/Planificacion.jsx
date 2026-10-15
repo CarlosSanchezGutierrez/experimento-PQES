@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, ClipboardList, Pencil, Plus, Trash2, X, XCircle } from "lucide-react";
+import { Check, ClipboardList, MoreHorizontal, Pencil, Plus, Trash2, X, XCircle } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import PlanningHistoryButton from "../components/PlanningHistoryButton";
 import {
@@ -52,6 +52,8 @@ function Planificacion() {
   const [quarters, setQuarters] = useState({});
   const [rejectingId, setRejectingId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [actionItem, setActionItem] = useState(null);
+  const [detailItem, setDetailItem] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -143,13 +145,28 @@ function Planificacion() {
     if (ok) closeModal();
   };
 
-  const handleApprove = (item) =>
-    run(
-      () => approveAuditProposal(item.id, quarters[item.id] || item.quarter),
+  const handleApprove = async (item) => {
+    const selectedQuarter = quarters[item.id] || item.quarter || "";
+
+    if (!QUARTERS.some((quarter) => quarter.value === selectedQuarter)) {
+      setError(
+        "Selecciona un trimestre estimado antes de marcar la propuesta como aprobada."
+      );
+      setMessage("");
+      return;
+    }
+
+    setError("");
+
+    const ok = await run(
+      () => approveAuditProposal(item.id, selectedQuarter),
       "La propuesta alcanzó el 100% y ahora aparece en Trimestres."
     );
+    if (ok) setActionItem(null);
+  };
 
   const startReject = (item) => {
+    setActionItem(item);
     setRejectingId(item.id);
     setRejectionReason("");
     setError("");
@@ -164,13 +181,24 @@ function Planificacion() {
     if (ok) {
       setRejectingId(null);
       setRejectionReason("");
+      setActionItem(null);
     }
   };
 
   const handleDelete = (item) => {
     if (!window.confirm(`¿Eliminar la propuesta ${item.id}? Esta acción no se puede deshacer.`)) return;
-    run(() => deleteAuditProposal(item.id), "La propuesta fue eliminada.");
+    run(() => deleteAuditProposal(item.id), "La propuesta fue eliminada.").then((ok) => {
+      if (ok) setActionItem(null);
+    });
   };
+
+  const closeActions = () => {
+    setActionItem(null);
+    setRejectingId(null);
+    setRejectionReason("");
+  };
+
+  const openDetails = (item) => setDetailItem(item);
 
   return (
     <div className="dashboard-layout">
@@ -218,7 +246,21 @@ function Planificacion() {
           ) : (
             <div className="planning-list">
               {openProposals.map((item) => (
-                <article className="planning-card" key={item.id}>
+                <article
+                  className="planning-card"
+                  key={item.id}
+                  onClick={() => openDetails(item)}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openDetails(item);
+                    }
+                  }}
+                  role="button"
+                  tabIndex="0"
+                  aria-label={`Ver detalles de ${item.id} ${item.title}`}
+                >
                   <div className="planning-card-icon"><ClipboardList size={22} /></div>
                   <div className="planning-card-content">
                     <div className="proposal-heading">
@@ -226,18 +268,12 @@ function Planificacion() {
                       <span className={`risk-badge risk-${item.risk.toLowerCase()}`}>{item.risk}</span>
                     </div>
                     <h2>{item.title}</h2>
-                    <p>{item.objective}</p>
-                    {item.scope && <p><b>Alcance:</b> {item.scope}</p>}
-                    {item.justification && <p><b>Justificación:</b> {item.justification}</p>}
+                    <p className="proposal-summary">{item.objective}</p>
                     <div className="proposal-meta">
                       <span><b>Tipo:</b> {item.type}</span>
                       <span><b>Área:</b> {item.area || "Sin definir"}</span>
                       <span><b>Responsable:</b> {item.responsible || "Sin asignar"}</span>
-                      <span><b>Año:</b> {item.year}</span>
-                      {(item.startDate || item.endDate) && (
-                        <span><b>Periodo:</b> {formatDate(item.startDate) || "—"} → {formatDate(item.endDate) || "—"}</span>
-                      )}
-                      {item.createdBy && <span><b>Creada por:</b> {item.createdBy.name}</span>}
+                      <span><b>Periodo:</b> {formatDate(item.startDate) || "—"} → {formatDate(item.endDate) || "—"}</span>
                     </div>
                     <div className="approval-progress">
                       <div><span>Aprobación</span><b>{item.approval || 0}%</b></div>
@@ -245,61 +281,149 @@ function Planificacion() {
                     </div>
                   </div>
                   <div className="planning-card-actions">
-                    {canApprove && (
-                      <>
-                        <label htmlFor={`quarter-${item.id}`}>Trimestre estimado</label>
-                        <select
-                          id={`quarter-${item.id}`}
-                          value={quarters[item.id] || item.quarter || ""}
-                          onChange={(event) => setQuarters({ ...quarters, [item.id]: event.target.value })}
-                        >
-                          <option value="">Sin definir</option>
-                          {QUARTERS.map((quarter) => (
-                            <option key={quarter.value} value={quarter.value}>{quarter.label}</option>
-                          ))}
-                        </select>
-                        <button type="button" onClick={() => handleApprove(item)}>
-                          <Check size={17} aria-hidden="true" />
-                          Marcar 100% aprobada
-                        </button>
-                        {rejectingId === item.id ? (
-                          <form className="rejection-form" onSubmit={(event) => handleReject(event, item)}>
-                            <label htmlFor={`reason-${item.id}`}>Motivo del rechazo</label>
-                            <textarea
-                              id={`reason-${item.id}`}
-                              required
-                              maxLength={1000}
-                              value={rejectionReason}
-                              onChange={(event) => setRejectionReason(event.target.value)}
-                              placeholder="Explica qué debe corregirse o por qué no procede."
-                            />
-                            <button type="submit" className="reject-action">Confirmar rechazo</button>
-                            <button type="button" className="cancel-reject-action" onClick={() => setRejectingId(null)}>Cancelar</button>
-                          </form>
-                        ) : (
-                          <button type="button" className="reject-action" onClick={() => startReject(item)}>
-                            <XCircle size={16} aria-hidden="true" />
-                            Rechazar propuesta
-                          </button>
-                        )}
-                      </>
-                    )}
-                    {canCreate && (
-                      <>
-                        {(user.role !== "JEFATURA" || item.createdBy?.id === user.id) && <button type="button" onClick={() => openEdit(item)}>
-                          <Pencil size={16} aria-hidden="true" />
-                          Editar
-                        </button>}
-                        {canDelete && <button type="button" onClick={() => handleDelete(item)}>
-                          <Trash2 size={16} aria-hidden="true" />
-                          Eliminar
-                        </button>}
-                      </>
-                    )}
-                    <PlanningHistoryButton proposal={item} />
+                    <button
+                      type="button"
+                      className="actions-trigger"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setActionItem(item);
+                      }}
+                      aria-label={`Abrir acciones de ${item.title}`}
+                    >
+                      <MoreHorizontal size={18} aria-hidden="true" />
+                      Acciones
+                    </button>
                   </div>
                 </article>
               ))}
+            </div>
+          )}
+
+          {detailItem && (
+            <div className="details-modal-backdrop" role="presentation" onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setDetailItem(null);
+            }}>
+              <section className="details-modal" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
+                <header className="details-modal-header">
+                  <div>
+                    <span className="eyebrow">DETALLE DE AUDITORÍA</span>
+                    <h2 id="details-modal-title">{detailItem.id} · {detailItem.title}</h2>
+                  </div>
+                  <button type="button" className="actions-modal-close" onClick={() => setDetailItem(null)} aria-label="Cerrar detalles">
+                    <X size={20} aria-hidden="true" />
+                  </button>
+                </header>
+
+                <section className="details-section">
+                  <h3>Información general</h3>
+                  <div className="details-grid">
+                    <div className="details-field details-field-wide"><span>Descripción</span><p>{detailItem.objective || "Sin descripción"}</p></div>
+                    <div className="details-field"><span>Tipo</span><p>{detailItem.type || "Sin definir"}</p></div>
+                    <div className="details-field"><span>Área</span><p>{detailItem.area || "Sin definir"}</p></div>
+                    <div className="details-field"><span>Responsable</span><p>{detailItem.responsible || "Sin asignar"}</p></div>
+                    <div className="details-field"><span>Año</span><p>{detailItem.year || "Sin definir"}</p></div>
+                    <div className="details-field"><span>Periodo</span><p>{formatDate(detailItem.startDate) || "—"} → {formatDate(detailItem.endDate) || "—"}</p></div>
+                    <div className="details-field"><span>Prioridad</span><p><span className={`risk-badge risk-${detailItem.risk.toLowerCase()}`}>{detailItem.risk}</span></p></div>
+                    <div className="details-field"><span>Estado actual</span><p>{detailItem.status || "Sin definir"}</p></div>
+                    <div className="details-field"><span>Creada por</span><p>{detailItem.createdBy?.name || "Sin dato"}</p></div>
+                  </div>
+                </section>
+
+                <section className="details-section">
+                  <h3>Alcance de la auditoría</h3>
+                  <p className="details-long-text">{detailItem.scope || "Sin alcance registrado."}</p>
+                </section>
+
+                <section className="details-section">
+                  <h3>Justificación</h3>
+                  <p className="details-long-text">{detailItem.justification || "Sin justificación registrada."}</p>
+                </section>
+
+                <section className="details-section">
+                  <h3>Planificación y aprobación</h3>
+                  <div className="approval-progress details-progress">
+                    <div><span>Progreso de aprobación</span><b>{detailItem.approval || 0}%</b></div>
+                    <div className="progress-track"><span style={{ width: `${detailItem.approval || 0}%` }} /></div>
+                  </div>
+                  <p className="details-status">Estado actual: <strong>{detailItem.status || "Sin definir"}</strong></p>
+                </section>
+              </section>
+            </div>
+          )}
+
+          {actionItem && (
+            <div className="actions-modal-backdrop" role="presentation" onMouseDown={(event) => {
+              if (event.target === event.currentTarget) closeActions();
+            }}>
+              <section className="actions-modal" role="dialog" aria-modal="true" aria-labelledby="actions-modal-title">
+                <div className="actions-modal-header">
+                  <div>
+                    <span className="eyebrow">ACCIONES DE PROPUESTA</span>
+                    <h2 id="actions-modal-title">{actionItem.id} · {actionItem.title}</h2>
+                  </div>
+                  <button type="button" className="actions-modal-close" onClick={closeActions} aria-label="Cerrar acciones">
+                    <X size={20} aria-hidden="true" />
+                  </button>
+                </div>
+                {canApprove && (
+                  <div className="actions-modal-approval">
+                    <label htmlFor={`quarter-${actionItem.id}`}>Trimestre estimado</label>
+                    <select
+                      id={`quarter-${actionItem.id}`}
+                      value={quarters[actionItem.id] || actionItem.quarter || ""}
+                      onChange={(event) => setQuarters({ ...quarters, [actionItem.id]: event.target.value })}
+                    >
+                      <option value="">Sin definir</option>
+                      {QUARTERS.map((quarter) => (
+                        <option key={quarter.value} value={quarter.value}>{quarter.label}</option>
+                      ))}
+                    </select>
+                    <button type="button" onClick={() => handleApprove(actionItem)}>
+                      <Check size={17} aria-hidden="true" />
+                      Marcar 100% aprobada
+                    </button>
+                    {rejectingId === actionItem.id ? (
+                      <form className="rejection-form" onSubmit={(event) => handleReject(event, actionItem)}>
+                        <label htmlFor={`reason-${actionItem.id}`}>Motivo del rechazo</label>
+                        <textarea
+                          id={`reason-${actionItem.id}`}
+                          required
+                          maxLength={1000}
+                          value={rejectionReason}
+                          onChange={(event) => setRejectionReason(event.target.value)}
+                          placeholder="Explica qué debe corregirse o por qué no procede."
+                        />
+                        <button type="submit" className="reject-action">Confirmar rechazo</button>
+                        <button type="button" className="cancel-reject-action" onClick={() => setRejectingId(null)}>Cancelar</button>
+                      </form>
+                    ) : (
+                      <button type="button" className="reject-action" onClick={() => startReject(actionItem)}>
+                        <XCircle size={16} aria-hidden="true" />
+                        Rechazar propuesta
+                      </button>
+                    )}
+                  </div>
+                )}
+                <div className="actions-modal-secondary">
+                  {canCreate && (
+                    <>
+                      {(user.role !== "JEFATURA" || actionItem.createdBy?.id === user.id) && (
+                        <button type="button" onClick={() => { closeActions(); openEdit(actionItem); }}>
+                          <Pencil size={16} aria-hidden="true" />
+                          Editar
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button type="button" onClick={() => handleDelete(actionItem)}>
+                          <Trash2 size={16} aria-hidden="true" />
+                          Eliminar
+                        </button>
+                      )}
+                    </>
+                  )}
+                  <PlanningHistoryButton proposal={actionItem} />
+                </div>
+              </section>
             </div>
           )}
 

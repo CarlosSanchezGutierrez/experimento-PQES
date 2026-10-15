@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import PlanningHistoryButton from "../components/PlanningHistoryButton";
-import { getPlanningAudits } from "../services/planningService";
-import { QUARTERS } from "../constants/planning";
+import { getPlanningAudits, startAudit } from "../services/planningService";
+import { PLANNING_APPROVE_ROLES, QUARTERS } from "../constants/planning";
 import "./Planning.css";
 
 const itemStatusLabel = (status) => ({
@@ -88,14 +88,31 @@ function Trimestres() {
 export function TrimestreDetalle() {
   const navigate = useNavigate();
   const { quarterId } = useParams();
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const canStart = PLANNING_APPROVE_ROLES.includes(user?.role);
   const quarter = QUARTERS.find((item) => item.value === quarterId) || QUARTERS[0];
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("Todos los estados");
   const [allAudits, setAllAudits] = useState([]);
+  const [startingId, setStartingId] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     getPlanningAudits().then(setAllAudits).catch(() => setAllAudits([]));
   }, []);
+
+  const beginAudit = async (audit) => {
+    setStartingId(audit.id);
+    setError("");
+    try {
+      await startAudit(audit.id);
+      navigate(`/auditorias-activas/${encodeURIComponent(audit.id)}`);
+    } catch (startError) {
+      setError(startError.message);
+    } finally {
+      setStartingId(null);
+    }
+  };
 
   const audits = allAudits
     .filter((item) => ["APPROVED", "ACTIVE", "CLOSED"].includes(item.status) && item.quarter === quarter.value)
@@ -133,6 +150,7 @@ export function TrimestreDetalle() {
               <h2>Filtrar auditorías</h2>
               <p>Busca por identificador, auditoría, área o responsable.</p>
             </div>
+            {error && <p className="planning-message error" role="alert">{error}</p>}
             <div className="filter-controls">
               <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Estado">
                 <option>Todos los estados</option>
@@ -154,16 +172,73 @@ export function TrimestreDetalle() {
             {audits.length === 0 ? (
               <div className="workspace-empty"><Clock size={22} /> No hay auditorías programadas en este trimestre.</div>
             ) : audits.map((audit) => (
-              <div className="audit-table-row" key={audit.id}>
-                <span className="planning-id">{audit.id}</span>
-                <strong>{audit.title}</strong>
+              <div
+                className="audit-table-row audit-table-row-clickable"
+                key={audit.id}
+                role="link"
+                tabIndex="0"
+                onClick={() => navigate(`/auditorias-activas/${encodeURIComponent(audit.id)}`)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    navigate(`/auditorias-activas/${encodeURIComponent(audit.id)}`);
+                  }
+                }}
+                aria-label={`Abrir auditoría ${audit.id}`}
+              >
+                {audit.status === "ACTIVE" ? (
+                  <button
+                    type="button"
+                    className="audit-table-link planning-id"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      navigate(`/auditorias-activas/${encodeURIComponent(audit.id)}`);
+                    }}
+                    aria-label={`Abrir auditoría ${audit.id}`}
+                  >
+                    {audit.id}
+                  </button>
+                ) : (
+                  <span className="planning-id">{audit.id}</span>
+                )}
+                {audit.status === "ACTIVE" ? (
+                  <button
+                    type="button"
+                    className="audit-table-link audit-title-link"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      navigate(`/auditorias-activas/${encodeURIComponent(audit.id)}`);
+                    }}
+                  >
+                    {audit.title}
+                  </button>
+                ) : (
+                  <strong>{audit.title}</strong>
+                )}
                 <span>{audit.area}</span>
                 <span>{audit.responsible}</span>
                 <span className={`status-pill status-${audit.status.toLowerCase()}`}>
                   {audit.status === "ACTIVE" ? <Activity size={14} /> : <CheckCircle2 size={14} />}{itemStatusLabel(audit.status)}
                 </span>
                 <span className="audit-progress"><i /><b>{audit.progress ?? 0}%</b></span>
-                <PlanningHistoryButton proposal={audit} compact />
+                {audit.status === "APPROVED" && canStart ? (
+                  <button
+                    type="button"
+                    className="start-audit-button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      beginAudit(audit);
+                    }}
+                    disabled={startingId === audit.id}
+                  >
+                    <Activity size={15} />
+                    {startingId === audit.id ? "Iniciando..." : "Iniciar"}
+                  </button>
+                ) : (
+                  <span onClick={(event) => event.stopPropagation()}>
+                    <PlanningHistoryButton proposal={audit} compact />
+                  </span>
+                )}
               </div>
             ))}
           </div>

@@ -84,6 +84,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/auditorias-activas/:auditId"
+          element={
+            <ProtectedRoute>
+              <AuditoriasActivas />
+            </ProtectedRoute>
+          }
+        />
 
         <Route path="/riesgos" element={<ProtectedRoute><Riesgos /></ProtectedRoute>} />
         <Route path="/controles" element={<ProtectedRoute><Controles /></ProtectedRoute>} />
