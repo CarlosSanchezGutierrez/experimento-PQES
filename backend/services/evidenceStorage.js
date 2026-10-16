@@ -41,21 +41,26 @@ const pathFor = (entityType, entityId, mime) => {
 };
 
 const hasValidSignature = (bytes, mime) => {
-  if (mime === "application/pdf") return bytes.subarray(0, 5).toString() === "%PDF-";
-  if (mime === "image/png") return bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-  if (mime === "image/jpeg") return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  if (mime === "image/webp") return bytes.subarray(0, 4).toString() === "RIFF" && bytes.subarray(8, 12).toString() === "WEBP";
+  const data = Buffer.from(bytes);
+  if (mime === "application/pdf") return data.subarray(0, 5).toString() === "%PDF-";
+  if (mime === "image/png") return data.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  if (mime === "image/jpeg") return data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff;
+  if (mime === "image/webp") return data.subarray(0, 4).toString() === "RIFF" && data.subarray(8, 12).toString() === "WEBP";
   if (mime === "text/plain") {
-    try { new TextDecoder("utf-8", { fatal: true }).decode(bytes); return !bytes.includes(0); } catch { return false; }
+    try { new TextDecoder("utf-8", { fatal: true }).decode(data); return !data.includes(0); } catch { return false; }
   }
   return false;
 };
 
 const upload = async ({ entityType, entityId, mime, bytes }) => {
-  if (!Buffer.isBuffer(bytes) || bytes.length === 0 || bytes.length > MAX_BYTES) {
+  if (!Buffer.isBuffer(bytes)) {
+    throw new EvidenceStorageError("El cuerpo debe ser un archivo binario.", 400);
+  }
+  const fileBytes = Buffer.from(bytes);
+  if (fileBytes.length === 0 || fileBytes.length > MAX_BYTES) {
     throw new EvidenceStorageError("El archivo debe tener entre 1 byte y 3 MB.", 400);
   }
-  if (!hasValidSignature(bytes, mime)) throw new EvidenceStorageError("El contenido no coincide con el tipo de archivo.", 415);
+  if (!hasValidSignature(fileBytes, mime)) throw new EvidenceStorageError("El contenido no coincide con el tipo de archivo.", 415);
   const path = pathFor(entityType, entityId, mime);
   const { root, key } = config();
   const url = new URL(`/storage/v1/object/${BUCKET}/${path}`, root);
@@ -63,11 +68,11 @@ const upload = async ({ entityType, entityId, mime, bytes }) => {
   try {
     response = await fetch(url, {
       method: "POST", headers: { ...headersFor(key), "Content-Type": mime, "cache-control": "max-age=3600", "x-upsert": "false" },
-      body: bytes, signal: AbortSignal.timeout(15_000)
+      body: fileBytes, signal: AbortSignal.timeout(15_000)
     });
   } catch { throw new EvidenceStorageError("No se pudo conectar con el almacén de archivos."); }
   if (!response.ok) throw new EvidenceStorageError("El almacén de archivos rechazó la carga.");
-  return { bucket: BUCKET, path, mime, size: bytes.length };
+  return { bucket: BUCKET, path, mime, size: fileBytes.length };
 };
 
 const remove = async (file) => {
