@@ -9,6 +9,7 @@ import { closeAudit, getActiveAudits, getPlanningAudits, startAudit } from "../s
 import { getRisks } from "../services/riskService";
 import { getControls } from "../services/controlService";
 import { getEvidence } from "../services/evidenceService";
+import { getFindings } from "../services/findingService";
 import "./Planning.css";
 
 const riskFor = (likelihood, impact) => {
@@ -36,17 +37,19 @@ function AuditoriasActivas() {
   const [activeStep, setActiveStep] = useState("execution");
   const [activeTab, setActiveTab] = useState("summary");
   const [evidence, setEvidence] = useState([]);
+  const [findings, setFindings] = useState([]);
 
   const refresh = useCallback(async () => {
     try {
-      const [active, proposals, linkedRisks, linkedControls, allEvidence] = await Promise.all([
-        getActiveAudits(), getPlanningAudits(), getRisks(), getControls(), getEvidence()
+      const [active, proposals, linkedRisks, linkedControls, allEvidence, allFindings] = await Promise.all([
+        getActiveAudits(), getPlanningAudits(), getRisks(), getControls(), getEvidence(), getFindings()
       ]);
       setActiveAudits(active);
       setApprovedAudits(proposals.filter((item) => item.status === "APPROVED"));
       setRisks(linkedRisks);
       setControls(linkedControls);
       setEvidence(allEvidence);
+      setFindings(allFindings);
       setError("");
     } catch (loadError) {
       setError(loadError.message);
@@ -57,14 +60,15 @@ function AuditoriasActivas() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getActiveAudits(), getPlanningAudits(), getRisks(), getControls(), getEvidence()])
-      .then(([active, proposals, linkedRisks, linkedControls, allEvidence]) => {
+    Promise.all([getActiveAudits(), getPlanningAudits(), getRisks(), getControls(), getEvidence(), getFindings()])
+      .then(([active, proposals, linkedRisks, linkedControls, allEvidence, allFindings]) => {
         if (cancelled) return;
         setActiveAudits(active);
         setApprovedAudits(proposals.filter((item) => item.status === "APPROVED"));
         setRisks(linkedRisks);
         setControls(linkedControls);
         setEvidence(allEvidence);
+        setFindings(allFindings);
         const auditFromRoute = auditId ? active.find((item) => item.id === auditId) : null;
         setSelectedAudit(auditFromRoute || null);
         if (auditFromRoute) setActiveStep("annual");
@@ -111,6 +115,7 @@ function AuditoriasActivas() {
   const linkedRisks = selectedAudit ? risks.filter((item) => item.linkedAuditId === selectedAudit.id) : [];
   const linkedControls = selectedAudit ? controls.filter((item) => linkedRisks.some((risk) => item.riskIds?.includes(risk.id))) : [];
   const linkedEvidence = selectedAudit ? evidence.filter((item) => item.auditId === selectedAudit.id || item.linkedAuditId === selectedAudit.id) : [];
+  const linkedFindings = selectedAudit ? findings.filter((item) => item.auditId === selectedAudit.id) : [];
 
   const runTransition = async (id, action, successMessage) => {
     setBusyId(id);
@@ -371,6 +376,7 @@ function AuditoriasActivas() {
                           <Icon size={16} /> {label}
                           {id === "risks" && linkedRisks.length > 0 && <small>{linkedRisks.length}</small>}
                           {id === "controls" && linkedControls.length > 0 && <small>{linkedControls.length}</small>}
+                          {id === "findings" && linkedFindings.length > 0 && <small>{linkedFindings.length}</small>}
                         </button>
                       ))}
                     </nav>
@@ -400,7 +406,7 @@ function AuditoriasActivas() {
                           {linkedControls.length ? linkedControls.map((control) => <article className="governance-record" key={control.id}><strong>{control.id} · {control.title}</strong><p>{control.description || "Control registrado en el expediente."}</p><span>Resultado: {control.effectiveness ?? "Sin evaluar"}</span></article>) : <p>No hay controles vinculados a los riesgos de esta auditoría.</p>}
                         </>
                       )}
-                      {activeTab === "findings" && <><h3>Hallazgos</h3><p>No hay hallazgos registrados para esta auditoría.</p></>}
+                      {activeTab === "findings" && <><h3>Hallazgos</h3>{linkedFindings.length ? linkedFindings.map((finding) => <article className="governance-record" key={finding.id}><strong>{finding.id} · {finding.title}</strong><p>{finding.description}</p><span>{finding.status} · Riesgo {finding.riskId} · Control {finding.controlId}</span></article>) : <p>No hay hallazgos registrados para esta auditoría.</p>}</>}
                       {activeTab === "evidence" && (
                         <>
                           <h3>Evidencias</h3>

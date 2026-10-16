@@ -5,7 +5,7 @@ export const dashboardSummary = (role = "DIRECTOR") => {
     title: auditor ? "Mis auditorías asignadas" : role === "SUPER_ADMIN" ? "Control ejecutivo del portafolio" : "Decisiones del portafolio",
     description: "Resumen actualizado del portafolio y sus prioridades.",
     scopeLabel: auditor ? "Solo mis asignaciones" : "Portafolio completo",
-    metrics: { total: auditor ? 1 : 4, pending: auditor ? 0 : 2, active: 1, highRisk: auditor ? 1 : 2, averageProgress: 70 },
+    metrics: { total: auditor ? 1 : 4, pending: auditor ? 0 : 2, active: 1, highRisk: auditor ? 1 : 2, openFindings: 1, averageProgress: 70 },
     statusCounts: [
       { status: "OPEN", count: auditor ? 0 : 2 },
       { status: "APPROVED", count: 1 },

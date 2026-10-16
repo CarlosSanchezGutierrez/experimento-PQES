@@ -18,6 +18,10 @@ test("HU-09: matrix selection reveals linked risks, controls and audit navigatio
     id: "CTL-451", title: "Revisión mensual", riskIds: ["RSK-451"], effectiveness: 4
   }] } }));
   await page.route("**/api/evidence/**", (route) => route.fulfill({ json: { evidence: [] } }));
+  await page.route("**/api/findings/**", (route) => route.fulfill({ json: { findings: [{
+    id: "FDG-451", title: "Excepción de conciliación", description: "La revisión detectó una diferencia.",
+    auditId: audit.id, riskId: "RSK-451", controlId: "CTL-451", status: "OPEN"
+  }] } }));
 
   await page.goto("/auditorias-activas");
   await page.getByRole("button", { name: "Ver auditorías con probabilidad Alta e impacto Media: 1" }).click();
@@ -34,6 +38,8 @@ test("HU-09: matrix selection reveals linked risks, controls and audit navigatio
   await expect(workspace.getByText("RSK-451 · Riesgo operativo")).toBeVisible();
   await workspace.getByRole("button", { name: /Controles/ }).click();
   await expect(workspace.getByText("CTL-451 · Revisión mensual")).toBeVisible();
+  await workspace.getByRole("button", { name: /Hallazgos/ }).click();
+  await expect(workspace.getByText("FDG-451 · Excepción de conciliación")).toBeVisible();
   await workspace.getByRole("button", { name: "Volver a auditorías" }).click();
   await expect(page).toHaveURL(/\/auditorias-activas$/);
   await expect(workspace).toHaveCount(0);

@@ -29,12 +29,14 @@ const dashboardCopy = {
   }
 };
 
-const getDashboardForUser = (user, proposals) => {
+const getDashboardForUser = (user, proposals, findings = []) => {
   const isAuditor = user.role === "AUDITOR";
   const visibleProposals = isAuditor
     ? proposals.filter((proposal) => proposal.responsibleId === user.id)
     : proposals;
   const activeAudits = visibleProposals.filter((proposal) => proposal.status === "ACTIVE");
+  const visibleAuditIds = new Set(visibleProposals.map((proposal) => proposal.id));
+  const openFindings = findings.filter((finding) => finding.status === "OPEN" && visibleAuditIds.has(finding.auditId));
   const executingAudits = visibleProposals.filter((proposal) => ["ACTIVE", "CLOSED"].includes(proposal.status));
   const statusCounts = ["OPEN", "APPROVED", "ACTIVE", "CLOSED", "REJECTED"].map((status) => ({
     status,
@@ -70,6 +72,7 @@ const getDashboardForUser = (user, proposals) => {
       total: visibleProposals.length,
       pending: visibleProposals.filter((proposal) => proposal.status === "OPEN").length,
       active: activeAudits.length,
+      openFindings: openFindings.length,
       highRisk: visibleProposals.filter((proposal) => proposal.risk === "Alto").length,
       averageProgress: executingAudits.length
         ? Math.round(executingAudits.reduce((total, proposal) => total + (proposal.progress ?? 0), 0) / executingAudits.length)
