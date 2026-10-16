@@ -9,4 +9,4 @@ const create = (data) => store.create({
   author: { ...data.author }
 }, { entity_type: data.entityType, entity_id: data.entityId });
 
-module.exports = { getAll: store.getAll, create };
+module.exports = { getAll: store.getAll, findById: store.findById, create };

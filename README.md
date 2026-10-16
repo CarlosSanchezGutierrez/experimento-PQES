@@ -8,7 +8,7 @@
 
 [▶ Abrir ejecución completa de calidad y pruebas](https://github.com/humbertofigb15/VERA/actions/workflows/classroom-quality.yml) · [Guía rápida para revisión docente](docs/testing/professor-quick-run.md)
 
-> **Estado:** prototipo académico. Por defecto los datos se mantienen en memoria y se reinician con el backend. Las ocho migraciones quedaron aplicadas y verificadas en el proyecto Supabase VERA el 15-16 de octubre de 2026; la API local pudo leer sus datos reales con los almacenes persistentes activados. Los modos del despliegue en Vercel siguen pendientes de configuración y de una prueba funcional con cuentas reales. Consulta la [guía de activación](docs/supabase-planning.md) y la [bitácora de despliegue](docs/supabase-rollout-2026-10.md). El modo demo contiene cuentas de ejemplo y no debe usarse con datos reales.
+> **Estado:** prototipo académico. Por defecto los datos se mantienen en memoria y se reinician con el backend. Las ocho migraciones iniciales quedaron aplicadas y verificadas en el proyecto Supabase VERA el 15-16 de octubre de 2026; las migraciones de hallazgos y archivos son posteriores. La API local pudo leer datos reales con los almacenes persistentes activados. Los modos del despliegue en Vercel siguen pendientes de configuración y de una prueba funcional con cuentas reales. Consulta la [guía de activación](docs/supabase-planning.md) y la [bitácora de despliegue](docs/supabase-rollout-2026-10.md). El modo demo contiene cuentas de ejemplo y no debe usarse con datos reales.
 
 ## Funcionalidades actuales
 
@@ -144,11 +144,11 @@ Una evaluación de 1–3 se considera insuficiente para abrir un hallazgo. Desde
 
 Es una bandeja dentro de la aplicación: no envía correo ni push, no crea notificaciones duplicadas y no persiste estados de lectura. El conteo representa la situación actual del portafolio, por lo que cambia cuando cambian los estados de las propuestas. La interfaz y el servicio quedan separados para que el equipo pueda agregar después persistencia, preferencias y canales de entrega.
 
-### HU-16: referencias de evidencia vinculadas
+### HU-16: archivos privados y referencias de evidencia
 
 `/evidencias` registra una referencia documental y la relaciona con un riesgo, control o auditoría existente. El registro incluye nombre, tipo, descripción, referencia externa, entidad relacionada, autor y fecha. `GET /api/evidence` permite filtrar por entidad o búsqueda; `POST /api/evidence` valida el destino y conserva el evento `EVIDENCE_REGISTERED`. Las personas con rol Auditoría solo consultan o agregan referencias a riesgos/auditorías asignados y a controles que cubren riesgos asignados.
 
-Este incremento no recibe ni almacena archivos binarios. Acepta un enlace HTTPS o identificador externo (por ejemplo, nombre de archivo o referencia de Drive); solo los enlaces HTTPS se muestran como vínculos clicables. Los metadatos usan memoria en el demo y pueden guardarse en Supabase con el modo optativo de evidencias y comentarios.
+También se puede cargar un PDF, PNG, JPEG, WebP o TXT de hasta 3 MB con `POST /api/evidence/upload`. La API valida firma y tamaño, comprueba el acceso a la entidad, guarda el archivo en el bucket privado `vera-evidence` y crea sus metadatos vinculados. `GET /api/evidence/:id/download` verifica de nuevo los permisos y devuelve una URL de descarga válida 60 segundos. La décima migración crea el bucket; se requiere `SUPABASE_URL` y una clave secreta solo en el backend. Si los metadatos no se guardan, la API intenta retirar el archivo cargado. Las referencias HTTPS e identificadores externos siguen disponibles. La persistencia de metadatos depende del modo optativo `VERA_EVIDENCE_COMMENT_STORE`; para aceptación en producción hay que activar ese modo y probar carga/descarga tras redesplegar.
 
 ### HU-18: historial, actividad y comentarios por auditoría
 

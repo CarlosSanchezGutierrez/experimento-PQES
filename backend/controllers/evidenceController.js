@@ -5,6 +5,7 @@ const planningRepository = require("../repositories/planningRepository");
 const userRepository = require("../repositories/userRepository");
 const { logActivity } = require("../services/auditLogger");
 const { ROLES } = require("../config/roles");
+const evidenceStorage = require("../services/evidenceStorage");
 
 const ENTITY_TYPES = ["RISK", "CONTROL", "AUDIT"];
 const EVIDENCE_TYPES = ["DOCUMENT", "SCREENSHOT", "REPORT", "OTHER"];
@@ -77,4 +78,51 @@ const createEvidence = async (req, res) => {
   res.status(201).json({ evidence });
 };
 
-module.exports = { listEvidence, createEvidence };
+const uploadEvidence = async (req, res) => {
+  const title = text(req.query.title);
+  const description = text(req.query.description);
+  const evidenceType = text(req.query.evidenceType);
+  const entityType = text(req.query.entityType);
+  const entityId = text(req.query.entityId);
+  const mime = text(req.headers["content-type"]).split(";")[0].toLowerCase();
+  if (title.length < 3 || title.length > 120) return res.status(400).json({ message: "El nombre debe tener entre 3 y 120 caracteres." });
+  if (description.length < 10 || description.length > 1000) return res.status(400).json({ message: "La descripción debe tener entre 10 y 1,000 caracteres." });
+  if (!EVIDENCE_TYPES.includes(evidenceType)) return res.status(400).json({ message: "Selecciona un tipo de evidencia válido." });
+  if (!ENTITY_TYPES.includes(entityType) || !entityId) return res.status(400).json({ message: "Selecciona un riesgo, control o auditoría." });
+  if (!evidenceStorage.MIME_EXTENSIONS[mime]) return res.status(415).json({ message: "Tipo de archivo no permitido." });
+  const entity = await findEntity(entityType, entityId);
+  if (!entity || !await canAccessEntity(entityType, entityId, req.user)) {
+    return res.status(404).json({ message: "El elemento relacionado no existe." });
+  }
+  const file = await evidenceStorage.upload({ entityType, entityId, mime, bytes: req.body });
+  const author = await userRepository.findById(req.user.id);
+  let evidence;
+  try {
+    evidence = await evidenceRepository.create({
+      title, description, evidenceType,
+      reference: "Archivo privado almacenado en VERA", entityType, entityId, entityTitle: entity.title,
+      file, author: { id: req.user.id, username: req.user.username, name: author?.name || req.user.username, role: req.user.role }
+    });
+  } catch (error) {
+    try { await evidenceStorage.remove(file); } catch (cleanupError) {
+      console.error("[EVIDENCE_FILE_CLEANUP_FAILED]", cleanupError.message);
+    }
+    throw error;
+  }
+  await logActivity({ actor: req.user, action: "EVIDENCE_FILE_UPLOADED", details: {
+    evidenceId: evidence.id, entityType, entityId, size: file.size, mime: file.mime
+  } });
+  res.status(201).json({ evidence });
+};
+
+const downloadEvidence = async (req, res) => {
+  const evidence = await evidenceRepository.findById(req.params.id);
+  if (!evidence?.file || !await canAccessEntity(evidence.entityType, evidence.entityId, req.user)) {
+    return res.status(404).json({ message: "Archivo de evidencia no encontrado." });
+  }
+  const url = await evidenceStorage.signedDownloadUrl(evidence.file);
+  res.set("Cache-Control", "no-store");
+  res.json({ url, expiresIn: 60 });
+};
+
+module.exports = { listEvidence, createEvidence, uploadEvidence, downloadEvidence };

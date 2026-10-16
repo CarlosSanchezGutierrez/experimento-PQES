@@ -4,7 +4,7 @@
 
 Este plan convierte los 78 casos de prueba recibidos en un programa verificable. Distingue pruebas unitarias, de integración HTTP, de interfaz, de compatibilidad, de carga y verificaciones operativas. Un caso no se considera aprobado por existir en este catálogo: debe ejecutarse en el nivel indicado y conservar evidencia.
 
-La línea base del repositorio es un prototipo React/Vite y Express. La suite `node:test` incluye pruebas unitarias e integración HTTP para reglas de cuenta, autenticación, usuarios/roles, riesgos, controles, propuestas, notificaciones, historial, referencias de evidencias y panel. Varias pruebas cubren solo APIs. Los datos de dominio residen en memoria; evidencia significa referencias y metadatos, no archivos binarios. Por eso las verificaciones de persistencia, carga de archivos y operación de producción no se pueden declarar cubiertas hoy.
+La línea base del repositorio es un prototipo React/Vite y Express. La suite `node:test` incluye pruebas unitarias e integración HTTP para reglas de cuenta, autenticación, usuarios/roles, riesgos, controles, propuestas, notificaciones, historial, referencias de evidencias, carga pequeña de archivos y panel. Varias pruebas cubren solo APIs. Los datos de dominio usan memoria por defecto; los modos persistentes y el bucket privado requieren activación y verificación remota. Por eso la operación de producción no se puede declarar cubierta por pruebas simuladas.
 
 ## Secuencia propuesta de pull requests
 
@@ -78,13 +78,13 @@ La disponibilidad de 99.5% requiere una ventana de medición mensual; RTO de 4 h
 | TC-15 | RF-14: transición de estado reflejada en panel | API/UI | Alta | 3 | Parcial: estados previos, inicio/cierre y transiciones inválidas probadas por API; reflejo visual queda en PR-5 |
 | TC-16 | RF-16: riesgo válido reflejado en panel | API/UI | Alta | 3 | Parcial: registro/cálculo de riesgo probado; falta verificar tablero integrado |
 | TC-17 | RF-16: riesgo inválido | Unit/API | Alta | 3 | Cubierto por API: límites de escala/campos y vínculo a auditoría inexistente |
-| TC-18 | RF-19: carga exitosa de archivo | API/E2E | Media | 4 | Bloqueado: solo hay referencias/metadatos, no carga binaria |
-| TC-19 | RF-19: archivo excede límite | API/E2E | Media | 4 | Bloqueado: falta carga binaria y límite configurado |
+| TC-18 | RF-19: carga exitosa de archivo | API/E2E | Media | 4 | Parcial: integración HTTP prueba carga PDF privada, vínculo y descarga firmada con Storage simulado; falta prueba en Supabase real y E2E |
+| TC-19 | RF-19: archivo excede límite | API/E2E | Media | 4 | Parcial: backend limita a 3 MB y devuelve 413; falta evidencia E2E/remota |
 | TC-20 | RF-24: notificación al responsable | API/E2E | Media | 4 | Parcial: bandeja derivada, prioridad y alcance por rol probados; falta canal externo/evento de entrega |
 | TC-21 | RF-24: marcar/gestionar como leída | API/E2E | Media | 4 | Bloqueado: la bandeja no persiste estados de lectura |
-| TC-22 | RF-27: aplicar filtros | API/E2E | Media | 5 | Parcial: filtros de riesgos/evidencias se cubren por API; filtros de reportes no implementados |
-| TC-23 | RF-27: búsqueda con coincidencias | API/E2E | Media | 5 | Cubierto parcialmente por API para riesgos y evidencias; falta búsqueda global/reportes/UI |
-| TC-24 | RF-27: búsqueda sin resultados | API/UI | Media | 5 | Cubierto por API para evidencias; falta mensaje visual y búsqueda de reportes |
+| TC-22 | RF-27: aplicar filtros | API/E2E | Media | 5 | Parcial: filtros de riesgos/evidencias y auditorías se cubren por API; filtros de reportes no implementados |
+| TC-23 | RF-27: búsqueda con coincidencias | API/E2E | Media | 5 | Parcial: búsquedas de riesgos, evidencias y auditorías por API; HU-26 agrega UI; falta búsqueda global/reportes |
+| TC-24 | RF-27: búsqueda sin resultados | API/UI | Media | 5 | Parcial: HU-26 muestra estado vacío en UI; falta búsqueda de reportes |
 | TC-25 | RF-27: filtro sin resultados | API/UI | Media | 5 | Parcial: falta estado vacío de filtros UI y reporte |
 | TC-26 | RF-29: exportación completa | API/E2E | Media | 5 | Bloqueado: no se encontró función de reportes/exportación en la línea base |
 | TC-27 | RF-29: exportar datos filtrados | API/E2E | Media | 5 | Bloqueado: falta función de exportación |
@@ -135,7 +135,7 @@ La disponibilidad de 99.5% requiere una ventana de medición mensual; RTO de 4 h
 | TC-72 | RNF-20: mensajes claros sin trazas técnicas | API/E2E | Media | 6 | Parcial: API y E2E validan error visible de login sin stack/exception; revisar demás formularios y flujos |
 | TC-73 | RNF-21: aviso de mantenimiento con 48 horas | Operativa/E2E | Media | 7 | Bloqueado: no se encontró agenda/canal de mantenimiento |
 | TC-74 | RNF-22: respaldo diario automático | Operativa | Alta | 7 | Bloqueado: requiere servicio de respaldo y evidencia de ejecución diaria |
-| TC-75 | RNF-23: rendimiento con alto volumen de evidencias | Carga | Media | 7 | Bloqueado: no se almacenan archivos binarios |
+| TC-75 | RNF-23: rendimiento con alto volumen de evidencias | Carga | Media | 7 | Bloqueado: falta entorno persistente y conjunto de carga representativo; la carga individual admite hasta 3 MB |
 | TC-76 | RNF-24: integrar una fuente externa nueva | Integración | Media | 7 | Pendiente: definir fuente, contrato y prueba de integración |
 | TC-77 | RNF-25: aviso de privacidad y consentimiento explícito | E2E/revisión | Alta | 7 | Pendiente: definir texto legal, captura y almacenamiento del consentimiento |
 | TC-78 | RNF-26: alineación con estándares IIA | Revisión/manual | Media | 7 | Pendiente: acordar estándar/versión, alcance y revisor competente |
