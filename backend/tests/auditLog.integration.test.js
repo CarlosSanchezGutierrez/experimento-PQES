@@ -34,3 +34,30 @@ test("RNF-04: access log query is restricted and filters a specific test event",
   assert.equal(entries[0].details.proposalId, proposalId);
   assert.ok(Number.isFinite(Date.parse(entries[0].date)));
 });
+
+test("recent audit activity is available to authenticated users and links visible audit records", async (context) => {
+  const baseUrl = await startTestServer(context, app);
+  const entry = await logActivity({
+    actor: { id: 3, username: `recent-${Date.now()}`, role: "GERENTE" },
+    action: "AUDIT_COMMENT_ADDED",
+    details: { proposalId: "AUD-01", title: "Auditoría de controles de acceso" }
+  });
+
+  assert.equal((await request(baseUrl, null, "recent")).status, 401);
+
+  const response = await request(baseUrl, tokenFor(2), "recent");
+  assert.equal(response.status, 200);
+  const { entries } = await response.json();
+  const activity = entries.find((item) => item.id === entry.id);
+  assert.deepEqual(activity.audit, {
+    id: "AUD-01",
+    title: "Auditoría de controles de acceso",
+    status: "OPEN"
+  });
+  assert.equal(activity.action, "AUDIT_COMMENT_ADDED");
+
+  const auditorResponse = await request(baseUrl, tokenFor(5), "recent");
+  assert.equal(auditorResponse.status, 200);
+  const { entries: auditorEntries } = await auditorResponse.json();
+  assert.equal(auditorEntries.some((item) => item.id === entry.id), false);
+});

@@ -4,9 +4,10 @@ const router = express.Router();
 const { verifyToken } = require("../middleware/authMiddleware");
 const { allowRoles } = require("../middleware/roleMiddleware");
 const { ROLES } = require("../config/roles");
-const { listAudit } = require("../controllers/auditController");
+const { listAudit, listRecentAuditActivity } = require("../controllers/auditController");
 
 // Registro de actividad de todos los usuarios (solo Super Admin)
+router.get("/recent", verifyToken, listRecentAuditActivity);
 router.get("/", verifyToken, allowRoles(ROLES.SUPER_ADMIN), listAudit);
 
 module.exports = router;

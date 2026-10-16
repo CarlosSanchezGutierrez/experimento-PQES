@@ -18,3 +18,17 @@ export const getAuditLog = async ({ action, actor, limit } = {}) => {
 
   return data.entries;
 };
+
+export const getRecentAuditActivity = async () => {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`${API_URL}/recent`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "No se pudo cargar la actividad reciente.");
+  }
+
+  return data.entries;
+};

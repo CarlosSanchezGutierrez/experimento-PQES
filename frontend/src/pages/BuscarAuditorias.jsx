@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { searchPlanningAudits } from "../services/planningService";
 import "./Planning.css";
@@ -13,6 +13,8 @@ const STATUS_LABELS = {
 
 function BuscarAuditorias() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const auditId = searchParams.get("auditId");
   const [filters, setFilters] = useState(EMPTY);
   const [audits, setAudits] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -33,12 +35,16 @@ function BuscarAuditorias() {
 
   useEffect(() => {
     let cancelled = false;
-    searchPlanningAudits(EMPTY)
-      .then((results) => { if (!cancelled) setAudits(results); })
+    searchPlanningAudits({ ...EMPTY, q: auditId || "" })
+      .then((results) => {
+        if (cancelled) return;
+        setAudits(results);
+        setSelected(auditId ? results.find((audit) => audit.id === auditId) || null : null);
+      })
       .catch((cause) => { if (!cancelled) setError(cause.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [auditId]);
 
   const update = (field) => (event) => setFilters((current) => ({ ...current, [field]: event.target.value }));
   const submit = (event) => { event.preventDefault(); setSelected(null); load(filters); };
