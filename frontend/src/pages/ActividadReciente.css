@@ -1,0 +1,144 @@
+.recent-activity-page .dashboard-header {
+  align-items: center;
+}
+
+.recent-activity-page .dashboard-header h1 {
+  margin-bottom: 8px;
+}
+
+.recent-activity-refresh,
+.recent-activity-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.recent-activity-refresh {
+  padding: 10px 13px;
+  border: 1px solid #dbe3e7;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #344b57;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.recent-activity-refresh:hover,
+.recent-activity-refresh:disabled {
+  background: #edf6f7;
+}
+
+.recent-activity-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recent-activity-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #e3e8ec;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(22, 45, 58, 0.04);
+}
+
+.recent-activity-card-icon {
+  display: flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #e6f1f4;
+  color: #123f4d;
+}
+
+.recent-activity-action {
+  color: #08756b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.recent-activity-card-content h2 {
+  margin: 5px 0;
+  color: #202b35;
+  font-size: 16px;
+}
+
+.recent-activity-card-content p {
+  margin: 0;
+  color: #647283;
+  font-size: 13px;
+}
+
+.recent-activity-open {
+  padding: 9px 12px;
+  border: 1px solid #dbe3e7;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #344b57;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.recent-activity-open:hover {
+  background: #edf6f7;
+}
+
+.recent-activity-empty,
+.recent-activity-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px;
+  border: 1px solid #e3e8ec;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #647283;
+}
+
+.recent-activity-empty p {
+  margin: 0;
+}
+
+.recent-activity-error {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #fdecea;
+  color: #a12622;
+}
+
+@media (max-width: 750px) {
+  .recent-activity-page .dashboard-header {
+    padding-left: 54px;
+  }
+
+  .recent-activity-card {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .recent-activity-card-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .recent-activity-card-content h2 {
+    font-size: 14px;
+  }
+
+  .recent-activity-open {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

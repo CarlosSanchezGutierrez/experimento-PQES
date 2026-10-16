@@ -18,41 +18,16 @@ import {
   X
 } from "lucide-react";
 import { ROLE_LABELS, USER_ADMIN_ROLES } from "../constants/roles";
-import { getRecentAuditActivity } from "../services/auditService";
 import "../pages/Dashboard.css";
 import "./Sidebar.css";
 
 const ICON_SIZE = 20;
 const ICON_STROKE = 1.75;
 
-const ACTIVITY_LABELS = {
-  AUDIT_PROPOSAL_CREATED: "Propuesta creada",
-  AUDIT_PROPOSAL_UPDATED: "Propuesta actualizada",
-  AUDIT_PROPOSAL_APPROVED: "Auditoría aprobada",
-  AUDIT_PROPOSAL_REJECTED: "Propuesta rechazada",
-  AUDIT_COMMENT_ADDED: "Comentario agregado",
-  AUDIT_STARTED: "Auditoría iniciada",
-  AUDIT_CLOSED: "Auditoría cerrada",
-  FINDING_REGISTERED: "Hallazgo registrado",
-  EVIDENCE_REGISTERED: "Evidencia registrada",
-  EVIDENCE_FILE_UPLOADED: "Archivo de evidencia cargado"
-};
-
-const formatDate = (date) => new Date(date).toLocaleString("es-MX", {
-  day: "numeric",
-  month: "short",
-  hour: "2-digit",
-  minute: "2-digit"
-});
-
 function Sidebar({ active }) {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activityOpen, setActivityOpen] = useState(false);
-  const [activities, setActivities] = useState([]);
-  const [activityLoading, setActivityLoading] = useState(false);
-  const [activityError, setActivityError] = useState("");
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -71,40 +46,12 @@ function Sidebar({ active }) {
     { id: "riesgos", label: "Registro de riesgos", Icon: ShieldAlert, path: "/riesgos" },
     { id: "controles", label: "Mapa de controles", Icon: ClipboardCheck, path: "/controles" },
     { id: "notificaciones", label: "Pendientes", Icon: BellRing, path: "/notificaciones" },
+    { id: "actividad", label: "Actividad reciente", Icon: Activity, path: "/actividad" },
     { id: "asistente", label: "Asistente de IA", Icon: Bot, path: "/asistente" },
     { id: "evidencias", label: "Evidencias", Icon: Files, path: "/evidencias" },
     ...(canSeeUsers ? [{ id: "usuarios", label: "Usuarios", Icon: UserCog, path: "/usuarios" }] : []),
     ...(canSeeAuditLog ? [{ id: "auditoria", label: "Registro de actividad", Icon: ScrollText, path: "/auditoria" }] : [])
   ];
-
-  const toggleActivity = async () => {
-    if (activityOpen) {
-      setActivityOpen(false);
-      return;
-    }
-
-    setActivityOpen(true);
-    setActivityLoading(true);
-    setActivityError("");
-    try {
-      setActivities(await getRecentAuditActivity());
-      setActivityError("");
-    } catch (error) {
-      setActivityError(error.message);
-    } finally {
-      setActivityLoading(false);
-    }
-  };
-
-  const openActivity = (entry) => {
-    const auditId = encodeURIComponent(entry.audit.id);
-    const path = entry.audit.status === "ACTIVE"
-      ? `/auditorias-activas/${auditId}`
-      : `/auditorias?auditId=${auditId}`;
-    navigate(path);
-    setMobileOpen(false);
-    setActivityOpen(false);
-  };
 
   return (
     <>
@@ -153,7 +100,6 @@ function Sidebar({ active }) {
                 onClick={() => {
                   navigate(path);
                   setMobileOpen(false);
-                  setActivityOpen(false);
                 }}
               >
                 <Icon size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
@@ -162,40 +108,6 @@ function Sidebar({ active }) {
             ))}
           </nav>
 
-          <div className="sidebar-activity">
-            <button
-              type="button"
-              className={`nav-item${activityOpen ? " active" : ""}`}
-              onClick={toggleActivity}
-              aria-expanded={activityOpen}
-              aria-controls="recent-audit-activity"
-            >
-              <Activity size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
-              <span>Actividad reciente</span>
-            </button>
-            {activityOpen && (
-              <section id="recent-audit-activity" className="recent-activity" aria-label="Actividad reciente de auditorías">
-                <h3>Actividad reciente</h3>
-                {activityLoading && <p className="recent-activity-message">Cargando actividad…</p>}
-                {activityError && <p className="recent-activity-message error" role="alert">{activityError}</p>}
-                {!activityLoading && !activityError && activities.length === 0 && (
-                  <p className="recent-activity-message">No hay actividad reciente en tus auditorías.</p>
-                )}
-                {!activityLoading && activities.map((entry) => (
-                  <button
-                    type="button"
-                    className="recent-activity-item"
-                    key={entry.id}
-                    onClick={() => openActivity(entry)}
-                  >
-                    <strong>{ACTIVITY_LABELS[entry.action] || entry.action}</strong>
-                    <span>{entry.audit.id} · {entry.audit.title}</span>
-                    <small>{entry.actor.username || "Sistema"} · {formatDate(entry.date)}</small>
-                  </button>
-                ))}
-              </section>
-            )}
-          </div>
         </div>
 
         <div className="sidebar-bottom">

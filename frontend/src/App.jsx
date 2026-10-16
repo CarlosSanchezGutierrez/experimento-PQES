@@ -15,6 +15,7 @@ import BuscarAuditorias from "./pages/BuscarAuditorias";
 import Riesgos from "./pages/Riesgos";
 import Controles from "./pages/Controles";
 import Notificaciones from "./pages/Notificaciones";
+import ActividadReciente from "./pages/ActividadReciente";
 import Asistente from "./pages/Asistente";
 import Evidencias from "./pages/Evidencias";
 import Trimestres, { TrimestreDetalle } from "./pages/Trimestres";
@@ -99,6 +100,7 @@ function App() {
         <Route path="/riesgos" element={<ProtectedRoute><Riesgos /></ProtectedRoute>} />
         <Route path="/controles" element={<ProtectedRoute><Controles /></ProtectedRoute>} />
         <Route path="/notificaciones" element={<ProtectedRoute><Notificaciones /></ProtectedRoute>} />
+        <Route path="/actividad" element={<ProtectedRoute><ActividadReciente /></ProtectedRoute>} />
         <Route path="/asistente" element={<ProtectedRoute><Asistente /></ProtectedRoute>} />
         <Route path="/evidencias" element={<ProtectedRoute><Evidencias /></ProtectedRoute>} />
 
