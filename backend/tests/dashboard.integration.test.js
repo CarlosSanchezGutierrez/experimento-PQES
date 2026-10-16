@@ -71,3 +71,62 @@ test("HU-07: dashboard data is authenticated and scoped according to the user's 
   assert.ok(directorDashboard.statusCounts.some((entry) => entry.status === "OPEN" && entry.count > 0));
   assert.equal(directorDashboard.riskMatrix.flat().reduce((sum, cell) => sum + cell.count, 0), 1);
 });
+
+test("HU-07/HU-09: el panel toma hallazgos reales del expediente asignado", async (context) => {
+  const base = await startTestServer(context, app);
+  const created = await fetch(`${base}/api/planning`, json(tokenFor(3), "POST", {
+    title: `Hallazgo en panel ${Date.now()}`, objective: "Revisar conciliación del área.",
+    scope: "Muestra mensual de registros.", justification: "Existen diferencias sin resolver.",
+    area: "Finanzas", responsibleId: 5, likelihood: 2, impact: 2, year: 2026, quarter: "Q3"
+  }));
+  assert.equal(created.status, 201);
+  const proposal = (await created.json()).proposal;
+  const riskResponse = await fetch(`${base}/api/risks`, json(tokenFor(3), "POST", {
+    title: `Riesgo de panel ${Date.now()}`, description: "Diferencias de conciliación sin revisión.",
+    area: "Finanzas", ownerId: 5, linkedAuditId: proposal.id, likelihood: 2, impact: 2,
+    note: "La muestra mensual identificó diferencias sin explicación."
+  }));
+  assert.equal(riskResponse.status, 201);
+  const risk = (await riskResponse.json()).risk;
+  const controlResponse = await fetch(`${base}/api/controls`, json(tokenFor(3), "POST", {
+    title: `Control de panel ${Date.now()}`, description: "Conciliación mensual de cuentas.",
+    type: "DETECTIVE", frequency: "Monthly", ownerId: 5, riskIds: [risk.id], rating: 2,
+    note: "El control no detectó oportunamente todas las diferencias."
+  }));
+  assert.equal(controlResponse.status, 201);
+  const control = (await controlResponse.json()).control;
+  const findingResponse = await fetch(`${base}/api/findings`, json(tokenFor(5), "POST", {
+    controlId: control.id, riskId: risk.id, title: "Diferencias sin aprobación",
+    description: "La conciliación contiene diferencias sin aprobación."
+  }));
+  assert.equal(findingResponse.status, 201);
+  const finding = (await findingResponse.json()).finding;
+  assert.equal(finding.auditId, proposal.id);
+  const otherRiskResponse = await fetch(`${base}/api/risks`, json(tokenFor(3), "POST", {
+    title: `Riesgo de otra persona ${Date.now()}`, description: "Riesgo del mismo expediente con otro responsable.",
+    area: "Finanzas", ownerId: 4, linkedAuditId: proposal.id, likelihood: 2, impact: 2,
+    note: "La evaluación corresponde a otra persona responsable."
+  }));
+  assert.equal(otherRiskResponse.status, 201);
+  const otherRisk = (await otherRiskResponse.json()).risk;
+  const otherControlResponse = await fetch(`${base}/api/controls`, json(tokenFor(3), "POST", {
+    title: `Control de otra persona ${Date.now()}`, description: "Revisión independiente de registros.",
+    type: "DETECTIVE", frequency: "Monthly", ownerId: 4, riskIds: [otherRisk.id], rating: 2,
+    note: "El control requiere una evaluación adicional."
+  }));
+  assert.equal(otherControlResponse.status, 201);
+  const otherControl = (await otherControlResponse.json()).control;
+  assert.equal((await fetch(`${base}/api/findings`, json(tokenFor(3), "POST", {
+    controlId: otherControl.id, riskId: otherRisk.id, title: "Hallazgo fuera de asignación",
+    description: "Este hallazgo pertenece a un riesgo de otra persona."
+  }))).status, 201);
+  const dashboard = await fetch(`${base}/api/dashboard`, json(tokenFor(5)));
+  assert.equal(dashboard.status, 200);
+  assert.equal((await dashboard.json()).metrics.openFindings, 1);
+  const directorDashboard = await fetch(`${base}/api/dashboard`, json(tokenFor(2)));
+  assert.equal((await directorDashboard.json()).metrics.openFindings, 2);
+  const visible = await fetch(`${base}/api/findings`, json(tokenFor(5)));
+  const visibleFindings = (await visible.json()).findings;
+  assert.ok(visibleFindings.some((item) => item.id === finding.id));
+  assert.ok(visibleFindings.every((item) => item.riskId !== otherRisk.id));
+});

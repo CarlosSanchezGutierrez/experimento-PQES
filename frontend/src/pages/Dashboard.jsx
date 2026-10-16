@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Activity, ArrowRight, CheckCircle2, ClipboardList, RotateCw, ShieldAlert } from "lucide-react";
+import { Activity, ArrowRight, CheckCircle2, ClipboardList, Flag, RotateCw, ShieldAlert } from "lucide-react";
 import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { getDashboardSummary } from "../services/dashboardService";
@@ -88,6 +88,10 @@ function Dashboard() {
                 <article className="kpi-card">
                   <span className="kpi-label">RIESGO ALTO</span>
                   <div className="kpi-row"><div><strong>{metrics.highRisk}</strong><p>Propuestas y auditorías visibles</p></div><div className="kpi-icon warning"><ShieldAlert size={22} /></div></div>
+                </article>
+                <article className="kpi-card">
+                  <span className="kpi-label">HALLAZGOS ABIERTOS</span>
+                  <div className="kpi-row"><div><strong>{metrics.openFindings}</strong><p>Vinculados a auditorías visibles</p></div><div className="kpi-icon warning"><Flag size={22} /></div></div>
                 </article>
               </div>
 

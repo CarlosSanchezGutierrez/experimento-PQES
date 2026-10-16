@@ -58,6 +58,10 @@ Esta comprobación demuestra conexión y lectura desde el backend local. El toke
 
 Después de integrar los PR [#56](https://github.com/humbertofigb15/VERA/pull/56) y [#57](https://github.com/humbertofigb15/VERA/pull/57), `supabase db push --dry-run --project-ref rsrsycokfdypliepcxgi --skip-vault` identificó únicamente las migraciones novena y décima. `supabase db push --project-ref rsrsycokfdypliepcxgi --skip-vault --yes` las aplicó sin errores. `supabase migration list` mostró diez versiones locales y remotas coincidentes y `supabase storage ls ss:///vera-evidence --project-ref rsrsycokfdypliepcxgi --experimental` confirmó el bucket `vera-evidence`. La CLI no demuestra carga, descarga ni persistencia de archivos desde Vercel; esos flujos siguen pendientes de prueba en un entorno configurado.
 
+## Lectura de notificaciones (16 de octubre)
+
+El PR [#58](https://github.com/humbertofigb15/VERA/pull/58) pasó calidad, CodeQL y UI E2E en Chrome, Edge, Firefox, móvil y tableta, y se integró en `main` (`0c121169396268c7cbf6e1f4d1c6a66857dc44c0`). `supabase db push --dry-run` indicó solo `20261016050000_create_notification_reads.sql`; el `db push` posterior la aplicó. `supabase migration list` mostró 11 versiones locales y remotas coincidentes. No se ha activado `VERA_NOTIFICATION_STORE` en Vercel ni comprobado allí el estado de lectura con sesiones reales.
+
 ## Pendiente para cerrar la aceptación
 
 La persona administradora de `figbo/vera` debe conceder acceso al proyecto o configurar las variables de servidor en Vercel: `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (o clave legacy), `VERA_PLANNING_STORE`, `VERA_USER_STORE`, `VERA_RISK_CONTROL_STORE`, `VERA_EVIDENCE_COMMENT_STORE`, `VERA_AUDIT_STORE` y `VERA_NOTIFICATION_STORE`, estas seis últimas con valor `supabase` tras aplicar sus migraciones. También debe revisar los dominios institucionales y el secreto JWT del entorno sin publicarlos. La [guía](supabase-planning.md) detalla el orden de activación.

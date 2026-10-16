@@ -9,6 +9,7 @@ test("director sees dashboard metrics, charts and allowed quick actions", async 
 
   await expect(page.getByRole("heading", { name: "Decisiones del portafolio" })).toBeVisible();
   await expect(page.getByText("AUDITORÍAS VISIBLES", { exact: true })).toBeVisible();
+  await expect(page.getByText("HALLAZGOS ABIERTOS", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Auditorías por estado" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Matriz probabilidad × impacto" })).toBeVisible();
   await expect(page.locator(".dashboard-risk-cell")).toHaveCount(9);

@@ -15,6 +15,7 @@ test("dashboard metrics and matrix match visible proposal state", () => {
     total: 4,
     pending: 2,
     active: 1,
+    openFindings: 0,
     highRisk: 2,
     averageProgress: 70
   });
@@ -63,4 +64,15 @@ test("jefatura sees only its own open proposals as pending actions", () => {
   ]);
   assert.deepEqual(dashboard.pendingItems.map(({ id }) => id), ["OPEN-OWNED"]);
   assert.equal(dashboard.metrics.total, 2);
+});
+
+test("HU-07: hallazgos abiertos se cuentan solo dentro de auditorías visibles", () => {
+  const findings = [
+    { id: "FDG-1", auditId: "ACTIVE-OWNED", status: "OPEN" },
+    { id: "FDG-2", auditId: "CLOSED-OTHER", status: "OPEN" },
+    { id: "FDG-3", auditId: "ACTIVE-OWNED", status: "CLOSED" },
+    { id: "FDG-4", auditId: null, status: "OPEN" }
+  ];
+  assert.equal(getDashboardForUser({ id: 5, role: "AUDITOR" }, proposals, findings).metrics.openFindings, 1);
+  assert.equal(getDashboardForUser({ id: 2, role: "DIRECTOR" }, proposals, findings).metrics.openFindings, 2);
 });
