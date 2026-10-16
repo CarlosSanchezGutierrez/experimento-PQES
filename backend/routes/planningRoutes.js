@@ -6,6 +6,7 @@ const { allowRoles } = require("../middleware/roleMiddleware");
 const { AUDIT_PROPOSAL_CREATE_ROLES, AUDIT_PROPOSAL_DELETE_ROLES, PLANNING_APPROVE_ROLES } = require("../config/roles");
 const {
   listProposals,
+  searchPlanningAudits,
   listActiveAudits,
   listAuditors,
   createProposal,
@@ -21,6 +22,7 @@ const { getHistory, addComment } = require("../controllers/planningHistoryContro
 
 // Todos los usuarios con sesión pueden consultar el tablero.
 router.get("/", verifyToken, listProposals);
+router.get("/search", verifyToken, searchPlanningAudits);
 router.get("/active", verifyToken, listActiveAudits);
 router.get("/auditors", verifyToken, allowRoles(...AUDIT_PROPOSAL_CREATE_ROLES), listAuditors);
 router.get("/:id/history", verifyToken, getHistory);

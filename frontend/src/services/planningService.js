@@ -25,6 +25,15 @@ export const getPlanningAudits = async () => {
   return data.proposals;
 };
 
+export const searchPlanningAudits = async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (String(value ?? "").trim()) params.set(key, String(value).trim());
+  });
+  const data = await request(`/search${params.size ? `?${params}` : ""}`);
+  return data.audits;
+};
+
 export const getActiveAudits = async () => {
   const data = await request("/active");
   return data.audits;

@@ -12,6 +12,7 @@ import {
   BellRing,
   Files,
   ScrollText,
+  Search,
   LogOut
 } from "lucide-react";
 import { ROLE_LABELS, USER_ADMIN_ROLES } from "../constants/roles";
@@ -43,6 +44,7 @@ function Sidebar({ active }) {
     { id: "planificacion", label: "Planificación", Icon: ClipboardList, path: "/planificacion", show: true },
     { id: "trimestres", label: "Trimestres", Icon: CalendarRange, path: "/trimestres", show: true },
     { id: "auditorias-activas", label: "Auditorías activas y riesgos", Icon: Activity, path: "/auditorias-activas", show: true },
+    { id: "auditorias", label: "Buscar auditorías", Icon: Search, path: "/auditorias", show: true },
     { id: "riesgos", label: "Registro de riesgos", Icon: ShieldAlert, path: "/riesgos", show: true },
     { id: "controles", label: "Mapa de controles", Icon: ClipboardCheck, path: "/controles", show: true },
     { id: "notificaciones", label: "Pendientes", Icon: BellRing, path: "/notificaciones", show: true },
