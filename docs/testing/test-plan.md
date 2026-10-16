@@ -81,7 +81,7 @@ La disponibilidad de 99.5% requiere una ventana de medición mensual; RTO de 4 h
 | TC-18 | RF-19: carga exitosa de archivo | API/E2E | Media | 4 | Parcial: integración HTTP prueba carga PDF privada, vínculo y descarga firmada con Storage simulado; falta prueba en Supabase real y E2E |
 | TC-19 | RF-19: archivo excede límite | API/E2E | Media | 4 | Parcial: backend limita a 3 MB y devuelve 413; falta evidencia E2E/remota |
 | TC-20 | RF-24: notificación al responsable | API/E2E | Media | 4 | Parcial: bandeja derivada, prioridad y alcance por rol probados; falta canal externo/evento de entrega |
-| TC-21 | RF-24: marcar/gestionar como leída | API/E2E | Media | 4 | Bloqueado: la bandeja no persiste estados de lectura |
+| TC-21 | RF-24: marcar/gestionar como leída | API/E2E | Media | 4 | Parcial: pruebas HTTP y repositorio simulado cubren lectura por persona, permisos y reversión; falta comprobar persistencia real en despliegue |
 | TC-22 | RF-27: aplicar filtros | API/E2E | Media | 5 | Parcial: filtros de riesgos/evidencias y auditorías se cubren por API; filtros de reportes no implementados |
 | TC-23 | RF-27: búsqueda con coincidencias | API/E2E | Media | 5 | Parcial: búsquedas de riesgos, evidencias y auditorías por API; HU-26 agrega UI; falta búsqueda global/reportes |
 | TC-24 | RF-27: búsqueda sin resultados | API/UI | Media | 5 | Parcial: HU-26 muestra estado vacío en UI; falta búsqueda de reportes |

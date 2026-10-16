@@ -8,7 +8,7 @@
 
 [▶ Abrir ejecución completa de calidad y pruebas](https://github.com/humbertofigb15/VERA/actions/workflows/classroom-quality.yml) · [Guía rápida para revisión docente](docs/testing/professor-quick-run.md)
 
-> **Estado:** prototipo académico. Por defecto los datos se mantienen en memoria y se reinician con el backend. Las ocho migraciones iniciales quedaron aplicadas y verificadas en el proyecto Supabase VERA el 15-16 de octubre de 2026; las migraciones de hallazgos y archivos son posteriores. La API local pudo leer datos reales con los almacenes persistentes activados. Los modos del despliegue en Vercel siguen pendientes de configuración y de una prueba funcional con cuentas reales. Consulta la [guía de activación](docs/supabase-planning.md) y la [bitácora de despliegue](docs/supabase-rollout-2026-10.md). El modo demo contiene cuentas de ejemplo y no debe usarse con datos reales.
+> **Estado:** prototipo académico. Por defecto los datos se mantienen en memoria y se reinician con el backend. Las diez primeras migraciones, incluidas hallazgos y archivos, quedaron aplicadas en el proyecto Supabase VERA el 15-16 de octubre de 2026. La API local pudo leer datos reales con los almacenes persistentes activados. La undécima migración de lecturas de notificaciones se aplica por separado. Los modos del despliegue en Vercel siguen pendientes de configuración y de una prueba funcional con cuentas reales. Consulta la [guía de activación](docs/supabase-planning.md) y la [bitácora de despliegue](docs/supabase-rollout-2026-10.md). El modo demo contiene cuentas de ejemplo y no debe usarse con datos reales.
 
 ## Funcionalidades actuales
 
@@ -142,7 +142,7 @@ Una evaluación de 1–3 se considera insuficiente para abrir un hallazgo. Desde
 
 `/notificaciones` presenta una bandeja interna con propuestas abiertas para decisión, propuestas creadas que esperan revisión, auditorías aprobadas listas para iniciar y auditorías activas asignadas. Los elementos se derivan al consultar `GET /api/notifications`, se filtran según el rol y la asignación y se ordenan por prioridad. Los botones llevan a las pantallas existentes para completar la acción.
 
-Es una bandeja dentro de la aplicación: no envía correo ni push, no crea notificaciones duplicadas y no persiste estados de lectura. El conteo representa la situación actual del portafolio, por lo que cambia cuando cambian los estados de las propuestas. La interfaz y el servicio quedan separados para que el equipo pueda agregar después persistencia, preferencias y canales de entrega.
+Es una bandeja dentro de la aplicación: no envía correo ni push. El conteo representa la situación actual del portafolio, por lo que cambia cuando cambian los estados de las propuestas. Cada persona puede filtrar sus elementos sin leer y usar `PUT /api/notifications/:id/read` o `DELETE /api/notifications/:id/read`; marcar como leído no completa la tarea. La lectura se guarda en memoria en el demo o en `vera_notification_reads` con `VERA_NOTIFICATION_STORE=supabase`, después de aplicar la undécima migración y activar cuentas y planificación persistentes. La API valida que el pendiente siga visible para esa persona antes de cambiarlo.
 
 ### HU-16: archivos privados y referencias de evidencia
 

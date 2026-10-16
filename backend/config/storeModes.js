@@ -1,7 +1,7 @@
 const validateStoreModes = (environment = process.env) => {
   for (const name of [
     "VERA_PLANNING_STORE", "VERA_USER_STORE", "VERA_RISK_CONTROL_STORE",
-    "VERA_EVIDENCE_COMMENT_STORE", "VERA_AUDIT_STORE"
+    "VERA_EVIDENCE_COMMENT_STORE", "VERA_AUDIT_STORE", "VERA_NOTIFICATION_STORE"
   ]) {
     if (environment[name] !== undefined && !["memory", "supabase"].includes(environment[name])) {
       throw new Error(`${name} debe ser memory o supabase.`);
@@ -22,6 +22,10 @@ const validateStoreModes = (environment = process.env) => {
         environment.VERA_RISK_CONTROL_STORE !== "supabase" ||
         environment.VERA_USER_STORE !== "supabase" || environment.VERA_PLANNING_STORE !== "supabase")) {
     throw new Error("La bitácora persistente requiere todos los almacenes de VERA en Supabase.");
+  }
+  if (environment.VERA_NOTIFICATION_STORE === "supabase" &&
+      (environment.VERA_USER_STORE !== "supabase" || environment.VERA_PLANNING_STORE !== "supabase")) {
+    throw new Error("Las lecturas persistentes de notificaciones requieren cuentas y planificación en Supabase.");
   }
 };
 
