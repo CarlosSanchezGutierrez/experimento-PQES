@@ -38,9 +38,11 @@ test("HU-15: controls link to valid risks, retain effectiveness evaluations and 
   assert.equal(createdResponse.status, 201);
   const control = (await createdResponse.json()).control;
   assert.equal(control.effectiveness, 4);
+  assert.equal(control.effectivenessResult, "EFFECTIVE");
   assert.equal(control.riskIds[0], risk.id);
   assert.equal(control.evaluations.length, 1);
   assert.equal(control.evaluations[0].assessedBy.id, 3);
+  assert.equal(control.evaluations[0].result, "EFFECTIVE");
 
   const otherRiskResponse = await fetch(`${baseUrl}/api/risks`, json(manager, "POST", {
     title: `HU-15 riesgo no asignado ${Date.now()}`,
@@ -64,8 +66,17 @@ test("HU-15: controls link to valid risks, retain effectiveness evaluations and 
   assert.equal(evaluationResponse.status, 200);
   const evaluated = (await evaluationResponse.json()).control;
   assert.equal(evaluated.effectiveness, 2);
+  assert.equal(evaluated.effectivenessResult, "INEFFECTIVE");
   assert.equal(evaluated.evaluations.length, 2);
   assert.equal(evaluated.evaluations[1].version, 2);
+  assert.equal(evaluated.evaluations[1].result, "INEFFECTIVE");
+  assert.ok(evaluated.evaluations[1].assessedAt);
+  assert.equal(evaluated.evaluations[1].assessedBy.id, 3);
+  assert.equal(evaluated.evaluations[1].note, "La evidencia del último trimestre mostró varias excepciones.");
+  const listed = await fetch(`${baseUrl}/api/controls`, json(manager));
+  const listedControl = (await listed.json()).controls.find((item) => item.id === control.id);
+  assert.equal(listedControl.effectivenessResult, "INEFFECTIVE");
+  assert.deepEqual(listedControl.evaluations.map((item) => item.result), ["EFFECTIVE", "INEFFECTIVE"]);
 
   const update = await fetch(`${baseUrl}/api/controls/${control.id}`, json(manager, "PUT", { ...body, title: `${body.title} revisado` }));
   assert.equal(update.status, 200);
