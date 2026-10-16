@@ -14,6 +14,7 @@ const planningRoutes = require("./routes/planningRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const riskRoutes = require("./routes/riskRoutes");
 const controlRoutes = require("./routes/controlRoutes");
+const findingRoutes = require("./routes/findingRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const evidenceRoutes = require("./routes/evidenceRoutes");
 
@@ -37,6 +38,7 @@ app.use("/api/planning", planningRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/risks", riskRoutes);
 app.use("/api/controls", controlRoutes);
+app.use("/api/findings", findingRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/evidence", evidenceRoutes);
 

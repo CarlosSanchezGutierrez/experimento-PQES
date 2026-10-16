@@ -36,6 +36,8 @@ Activa `VERA_RISK_CONTROL_STORE=supabase` **solo después** de activar `VERA_USE
 
 ## Evidencias y comentarios persistentes
 
+Antes de activar `VERA_RISK_CONTROL_STORE=supabase` con esta versión, aplica también la novena migración: crea `vera_findings` con vínculos a `vera_controls` y `vera_risks`, índice único por evaluación y trigger de bitácora. Los hallazgos comparten el modo de persistencia de riesgos/controles. La migración es aditiva y no cambia los datos existentes; comprueba el esquema remoto antes de aplicarla.
+
 La quinta migración crea `vera_evidence` y `vera_audit_comments` para las referencias de evidencia y los comentarios de auditoría. Ambas tablas tienen RLS habilitado y solo la API con clave de servidor puede accederlas. La API conserva el control de acceso por rol y asignación antes de devolver evidencias o comentarios.
 
 Activa `VERA_EVIDENCE_COMMENT_STORE=supabase` después de activar y comprobar planificación, cuentas, riesgos y controles persistentes. La API rechaza una combinación incompleta. En un entorno de prueba, registra una evidencia vinculada a un riesgo y un comentario en una propuesta; reinicia el backend y comprueba que ambos permanecen con sus IDs originales, que la persona Auditor solo ve los elementos a los que tiene acceso y que no aparecen claves en las respuestas. Esta migración guarda **referencias y metadatos**, no archivos binarios; no implica un bucket de Supabase Storage.

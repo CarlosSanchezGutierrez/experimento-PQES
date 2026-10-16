@@ -1,5 +1,5 @@
 const PAGE_SIZE = 1000;
-const TABLES = new Set(["vera_risks", "vera_controls", "vera_evidence", "vera_audit_comments"]);
+const TABLES = new Set(["vera_risks", "vera_controls", "vera_findings", "vera_evidence", "vera_audit_comments"]);
 
 class DomainStorageError extends Error {
   constructor(message, status = 503) {
