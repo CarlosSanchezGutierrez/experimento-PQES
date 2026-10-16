@@ -5,7 +5,7 @@ const { validateStoreModes } = require("../config/storeModes");
 test("every store rejects an invalid or empty mode instead of silently using memory", () => {
   for (const name of [
     "VERA_PLANNING_STORE", "VERA_USER_STORE", "VERA_RISK_CONTROL_STORE",
-    "VERA_EVIDENCE_COMMENT_STORE", "VERA_AUDIT_STORE"
+    "VERA_EVIDENCE_COMMENT_STORE", "VERA_AUDIT_STORE", "VERA_NOTIFICATION_STORE"
   ]) {
     assert.throws(() => validateStoreModes({ [name]: "suapbase" }), new RegExp(name));
     assert.throws(() => validateStoreModes({ [name]: "" }), new RegExp(name));
@@ -32,5 +32,9 @@ test("persistent risks and controls require persistent users and planning", () =
     VERA_AUDIT_STORE: "supabase", VERA_EVIDENCE_COMMENT_STORE: "supabase",
     VERA_RISK_CONTROL_STORE: "supabase", VERA_USER_STORE: "supabase",
     VERA_PLANNING_STORE: "supabase"
+  }));
+  assert.throws(() => validateStoreModes({ VERA_NOTIFICATION_STORE: "supabase" }), /requiere/);
+  assert.doesNotThrow(() => validateStoreModes({
+    VERA_NOTIFICATION_STORE: "supabase", VERA_USER_STORE: "supabase", VERA_PLANNING_STORE: "supabase"
   }));
 });
