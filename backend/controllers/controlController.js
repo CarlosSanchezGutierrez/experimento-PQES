@@ -8,6 +8,12 @@ const { ROLES } = require("../config/roles");
 const TYPES = ["PREVENTIVE", "DETECTIVE", "CORRECTIVE"];
 const FREQUENCIES = ["Daily", "Weekly", "Monthly", "Quarterly", "Annually"];
 const text = (value) => String(value ?? "").trim();
+const resultFor = (rating) => Number(rating) >= 4 ? "EFFECTIVE" : "INEFFECTIVE";
+const withResult = (control) => ({
+  ...control,
+  effectivenessResult: resultFor(control.effectiveness),
+  evaluations: control.evaluations.map((evaluation) => ({ ...evaluation, result: resultFor(evaluation.rating) }))
+});
 const activeUsers = async () => (await userRepository.getAll()).filter((user) => user.status === USER_STATUS.ACTIVE);
 
 const parseCore = async (body) => {
@@ -45,7 +51,7 @@ const visibleControls = async (req) => {
   return controls.filter((control) => control.riskIds.some((id) => assignedRiskIds.has(id)));
 };
 
-const listControls = async (req, res) => res.json({ controls: await visibleControls(req) });
+const listControls = async (req, res) => res.json({ controls: (await visibleControls(req)).map(withResult) });
 
 const createControl = async (req, res) => {
   const core = await parseCore(req.body);
@@ -59,7 +65,7 @@ const createControl = async (req, res) => {
     createdBy: { id: req.user.id, username: req.user.username, role: req.user.role }
   });
   await logActivity({ actor: req.user, action: "CONTROL_REGISTERED", details: { controlId: control.id, title: control.title, riskIds: control.riskIds } });
-  return res.status(201).json({ control });
+  return res.status(201).json({ control: withResult(control) });
 };
 
 const updateControl = async (req, res) => {
@@ -69,7 +75,7 @@ const updateControl = async (req, res) => {
   if (core.error) return res.status(400).json({ message: core.error });
   const control = await controlRepository.update(current.id, core.data, current.storageVersion);
   await logActivity({ actor: req.user, action: "CONTROL_UPDATED", details: { controlId: control.id, title: control.title } });
-  return res.json({ control });
+  return res.json({ control: withResult(control) });
 };
 
 const evaluateControl = async (req, res) => {
@@ -81,8 +87,8 @@ const evaluateControl = async (req, res) => {
     ...evaluation.data,
     assessedBy: { id: req.user.id, username: req.user.username, role: req.user.role }
   }, current.storageVersion);
-  await logActivity({ actor: req.user, action: "CONTROL_EVALUATED", details: { controlId: control.id, title: control.title, rating: control.effectiveness, version: control.evaluations.length } });
-  return res.json({ control });
+  await logActivity({ actor: req.user, action: "CONTROL_EVALUATED", details: { controlId: control.id, title: control.title, rating: control.effectiveness, result: resultFor(control.effectiveness), version: control.evaluations.length } });
+  return res.json({ control: withResult(control) });
 };
 
 module.exports = { listControls, createControl, updateControl, evaluateControl };
