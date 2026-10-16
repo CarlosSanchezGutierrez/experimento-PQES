@@ -11,6 +11,7 @@ import Registro from "./pages/Registro";
 import Auditoria from "./pages/Auditoria";
 import Planificacion from "./pages/Planificacion";
 import AuditoriasActivas from "./pages/AuditoriasActivas";
+import BuscarAuditorias from "./pages/BuscarAuditorias";
 import Riesgos from "./pages/Riesgos";
 import Controles from "./pages/Controles";
 import Notificaciones from "./pages/Notificaciones";
@@ -84,6 +85,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/auditorias" element={<ProtectedRoute><BuscarAuditorias /></ProtectedRoute>} />
         <Route
           path="/auditorias-activas/:auditId"
           element={

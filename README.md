@@ -122,6 +122,8 @@ Con `VERA_PLANNING_STORE=supabase`, esos conteos y pendientes de propuestas se c
 
 ### HU-14: registro y evaluación de riesgos
 
+El [estado de aceptación por HU](docs/hu-acceptance-audit.md) separa la funcionalidad implementada de las verificaciones y criterios pendientes.
+
 `/riesgos` mantiene un registro independiente de las propuestas de auditoría. Cada riesgo requiere nombre, descripción, área, responsable con cuenta activa y una evaluación inicial justificada; puede vincularse con una propuesta existente y documentar un plan de respuesta. Probabilidad e impacto usan valores enteros de 1 a 3; el puntaje es su producto y conserva los umbrales de HU-09: 1–2 bajo, 3–4 medio y 6–9 alto. El servidor calcula el nivel, detecta duplicados por nombre y área sin distinguir mayúsculas, filtra por nivel y búsqueda, y registra creación, cambios y reevaluaciones en la bitácora.
 
 Cada reevaluación conserva versión, factores, puntaje, nivel, justificación, usuario y fecha; no sobrescribe el historial anterior. `SUPER_ADMIN`, `DIRECTOR` y `GERENTE` pueden registrar, editar y reevaluar. Los auditores pueden consultar solo los riesgos que tienen asignados; otros roles autenticados tienen acceso de lectura global. Endpoints: `GET /api/risks`, `GET /api/risks/owners`, `POST /api/risks`, `PUT /api/risks/:id` y `POST /api/risks/:id/evaluate`; las rutas exigen sesión y las operaciones de escritura aplican autorización por rol.

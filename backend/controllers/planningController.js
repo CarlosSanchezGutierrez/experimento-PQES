@@ -5,6 +5,7 @@ const { ROLES } = require("../config/roles");
 const { USER_STATUS } = require("../config/accountRules");
 const { classifyRisk } = require("../config/riskRules");
 const { EDITABLE_FIELDS_BY_STATUS, FIELD_LABELS, STATUS_LABELS } = require("../config/auditEditRules");
+const { parseAuditFilters, searchAudits } = require("../services/auditSearch");
 
 
 const TYPES = ["Interna", "Externa"];
@@ -108,6 +109,17 @@ const listProposals = async (req, res) => {
     ? proposals.filter((proposal) => proposal.responsibleId === req.user.id)
     : proposals;
   res.json({ proposals: visible });
+};
+
+// GET /api/planning/search: filtra únicamente expedientes visibles para la sesión.
+const searchPlanningAudits = async (req, res) => {
+  const { filters, error } = parseAuditFilters(req.query);
+  if (error) return res.status(400).json({ message: error });
+  const proposals = await planningRepository.getAll();
+  const visible = req.user.role === ROLES.AUDITOR
+    ? proposals.filter((proposal) => proposal.responsibleId === req.user.id)
+    : proposals;
+  res.json({ audits: searchAudits(visible, filters) });
 };
 
 // GET /api/planning/active
@@ -351,6 +363,7 @@ const editAudit = async (req, res) => {
 module.exports = {
   parseProposal,
   listProposals,
+  searchPlanningAudits,
   listActiveAudits,
   listAuditors,
   createProposal,
