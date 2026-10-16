@@ -49,6 +49,8 @@ app.get("/", (req, res) => {
 });
 
 app.use((error, req, res, next) => {
+  if (error.type === "entity.too.large") return res.status(413).json({ message: "El archivo supera el límite de 3 MB." });
+  if (error.evidenceStorage) return res.status(error.status).json({ message: error.message });
   if (error.planningStorage) return res.status(error.status).json({ message: error.message });
   if (error.userStorage) return res.status(error.status).json({ message: error.message });
   if (error.domainStorage) return res.status(error.status).json({ message: error.message });

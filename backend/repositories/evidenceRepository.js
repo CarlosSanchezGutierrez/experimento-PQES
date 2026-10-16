@@ -2,6 +2,7 @@ const evidenceItems = [];
 let nextId = 1;
 
 const getAll = () => evidenceItems.map((item) => ({ ...item, author: { ...item.author } }));
+const findById = (id) => evidenceItems.find((item) => item.id === id) || null;
 const create = (data) => {
   const evidence = {
     ...data,
@@ -13,7 +14,7 @@ const create = (data) => {
   return { ...evidence, author: { ...evidence.author } };
 };
 
-const memoryRepository = { getAll, create };
+const memoryRepository = { getAll, findById, create };
 module.exports = process.env.VERA_EVIDENCE_COMMENT_STORE === "supabase"
   ? require("./supabaseEvidenceRepository")
   : memoryRepository;
