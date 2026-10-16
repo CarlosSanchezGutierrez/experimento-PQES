@@ -1,13 +1,13 @@
 # Estado de aceptación de historias de usuario
 
-Revisión del código en `main` al 15 de octubre de 2026 y de las capturas de Azure DevOps compartidas por el equipo. El estado “Resolved” en Azure DevOps no prueba por sí solo que todos los criterios se cumplan en el despliegue. La base de datos Supabase tiene migraciones, pero los almacenes persistentes son optativos y no se ha verificado la configuración del despliegue de Vercel.
+Revisión del código en `main` y de las capturas de Azure DevOps compartidas por el equipo, actualizada el 16 de octubre de 2026. El estado “Resolved” en Azure DevOps no prueba por sí solo que todos los criterios se cumplan en el despliegue. La base de datos Supabase tiene migraciones, pero los almacenes persistentes son optativos y no se ha verificado la configuración del despliegue de Vercel.
 
 | HU | Evidencia implementada en el repositorio | Pendiente para afirmar aceptación completa |
 | --- | --- | --- |
 | 07 Panel principal | `GET /api/dashboard`, métricas y pendientes según rol; pruebas de integración. | Verificar datos persistentes en el entorno desplegado y contrastar todos los criterios de Azure DevOps. No existen métricas reales de hallazgos. |
 | 09 Auditorías activas y matriz | `GET /api/planning/active`, matriz 3×3, vínculos con riesgos y controles. | Verificación remota con datos Supabase, incluida navegación y permisos. |
 | 14 Riesgos | API y pantalla de registro, evaluación versionada, filtros, RBAC; modo Supabase optativo. | Confirmar criterios completos de Azure DevOps, persistencia y permisos en el despliegue. |
-| 15 Controles | API y pantalla de controles, asociación con múltiples riesgos, evaluaciones versionadas y referencias de evidencia; modo Supabase optativo. | El criterio visible exige que un control inefectivo permita crear un hallazgo relacionado con control y riesgo: no existe ese flujo. Revisar la autorización de Auditoría frente al texto “Como auditor” y la matriz de roles. Confirmar persistencia remota. |
+| 15 Controles | API y pantalla de controles, asociación con múltiples riesgos, evaluaciones versionadas y referencias de evidencia; modo Supabase optativo. El incremento HU-15 agrega hallazgos ligados a control, riesgo y versión de evaluación; Auditoría puede crear uno en un riesgo asignado. | Confirmar persistencia remota y los criterios oficiales completos. El registro de controles y sus evaluaciones sigue reservado a roles de gestión hasta reconciliar la matriz de permisos de VERA. |
 | 16 Evidencias | API y pantalla de **referencias** vinculadas a riesgo, control o auditoría; modo Supabase optativo para metadatos. | Falta carga y almacenamiento de archivos binarios. La HU no puede considerarse completa con referencias externas solamente. |
 | 17 Notificaciones | Bandeja de pendientes calculada desde el estado de propuestas y auditorías; navegación contextual. | Los criterios completos no aparecen en las capturas. Verificar el alcance esperado de entregas, estados de lectura y persistencia; hoy los pendientes se recalculan y no hay correo/push ni lectura persistida. |
 | 18 Historial y comentarios | API y UI de eventos/comentarios; modos Supabase optativos. | Confirmar criterios completos y persistencia/auditoría en el despliegue. |
@@ -20,7 +20,7 @@ Revisión del código en `main` al 15 de octubre de 2026 y de las capturas de Az
 ## Secuencia de cierre
 
 1. Completar HU-26 en un PR acotado y validar sus filtros, roles e interfaz.
-2. Implementar el flujo de hallazgos de HU-15 con relación persistente a control y riesgo, reglas de roles y pruebas.
+2. Completar la validación remota de HU-15 y reconciliar con la matriz de permisos de VERA quién puede registrar y evaluar controles.
 3. Implementar carga, almacenamiento, descarga autorizada y vínculo de archivos de HU-16; conservar la distinción entre archivo y referencia externa.
 4. Obtener criterios completos de HU-17/HU-18 y cubrir cualquier diferencia real; comprobar los modos Supabase en un despliegue con acceso del propietario.
 5. Ejecutar la prueba de carga de HU-19 en un entorno de pruebas autorizado; registrar tasa, latencia, errores y límites. No ejecutarla contra producción sin una ventana coordinada.

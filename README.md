@@ -136,6 +136,8 @@ El alcance actual no incluye cierre del riesgo ni archivos binarios adjuntos. Po
 
 El modelo de controles y evaluaciones usa memoria en el demo y comparte el modo Supabase optativo con los riesgos, sin cambiar la interfaz HTTP.
 
+Una evaluación de 1–3 se considera insuficiente para abrir un hallazgo. Desde el mapa de controles se puede registrar uno indicando título, descripción y uno de los riesgos realmente asociados. `GET/POST /api/findings` conserva control, riesgo, auditoría vinculada cuando existe, versión de evaluación, actor y fecha. `AUDITOR` puede registrar hallazgos solo para riesgos que tiene asignados; los roles de gestión conservan acceso. Un hallazgo duplicado para el mismo control, riesgo y versión se rechaza. El modo Supabase usa `vera_findings`, creada por la novena migración; la interfaz no cierra hallazgos ni genera planes de acción.
+
 ### HU-17: bandeja de notificaciones y actividades pendientes
 
 `/notificaciones` presenta una bandeja interna con propuestas abiertas para decisión, propuestas creadas que esperan revisión, auditorías aprobadas listas para iniciar y auditorías activas asignadas. Los elementos se derivan al consultar `GET /api/notifications`, se filtran según el rol y la asignación y se ordenan por prioridad. Los botones llevan a las pantallas existentes para completar la acción.
