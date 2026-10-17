@@ -9,6 +9,9 @@
 .evidence-ai-modal form textarea { box-sizing: border-box; width: 100%; padding: 11px; border: 1px solid #cbd9dc; border-radius: 8px; font: inherit; resize: vertical; }
 .evidence-ai-modal .modal-actions { align-items: center; }
 .evidence-ai-modal .modal-actions span,.evidence-ai-note { color: #607680; font-size: 11px; }
+.evidence-ai-ocr { margin: 12px 0; padding: 11px; border: 1px solid #cfe4e3; border-radius: 9px; background: #f7fbfa; }
+.evidence-ai-ocr p,.evidence-ai-ocr small { display: block; margin: 0 0 8px; color: #536b76; font-size: 11px; line-height: 1.5; }
+.evidence-ai-ocr button { margin-bottom: 7px; }
 .evidence-ai-result { margin-top: 18px; padding: 14px; border: 1px solid #d7e5e7; border-radius: 9px; background: #f7fbfb; }
 .evidence-ai-result h3 { margin: 0 0 8px; color: #243844; font-size: 15px; }
 .evidence-ai-result p { margin: 0 0 8px; line-height: 1.5; overflow-wrap: anywhere; }

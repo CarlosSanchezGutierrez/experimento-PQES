@@ -88,7 +88,7 @@ function Evidencias() {
           <h2>{item.title}</h2><p>{item.description}</p>
           <div className="evidence-meta"><span><b>Relacionada con:</b> {item.entityTitle}</span><span><b>Registró:</b> {item.author.name}</span><span>{formatDate(item.createdAt)}</span></div>
           <div className="evidence-reference"><b>{item.file ? "Archivo:" : "Referencia:"}</b> {item.file ? <button type="button" className="secondary-action" onClick={() => download(item)}>Descargar archivo ({Math.ceil(item.file.size / 1024)} KB)</button> : safeLink(item.reference) ? <a href={item.reference} target="_blank" rel="noreferrer">Abrir referencia <ExternalLink size={13} /></a> : <span>{item.reference}</span>}</div>
-          {item.file && ["application/pdf", "text/plain"].includes(item.file.mime) && <button type="button" className="secondary-action evidence-ai-open" onClick={() => setAssistantEvidence(item)}><FileText size={15} aria-hidden="true" /> Consultar contenido con IA</button>}
+          {item.file && ["application/pdf", "text/plain", "image/png", "image/jpeg", "image/webp"].includes(item.file.mime) && <button type="button" className="secondary-action evidence-ai-open" onClick={() => setAssistantEvidence(item)}><FileText size={15} aria-hidden="true" /> Consultar contenido con IA</button>}
         </div>
       </article>)}</div>}
     <p className="evidence-footnote">La persistencia de metadatos depende de `VERA_EVIDENCE_COMMENT_STORE`; los archivos se guardan en un bucket privado de Supabase. La activación del despliegue debe verificarse por separado.</p>

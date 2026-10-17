@@ -7,7 +7,9 @@ const { logActivity } = require("../services/auditLogger");
 const { ROLES } = require("../config/roles");
 const evidenceStorage = require("../services/evidenceStorage");
 const { indexFile, askEvidenceContent } = require("../services/evidenceContentService");
-const { SEARCHABLE_MIME } = require("../services/evidenceTextExtraction");
+const { SEARCHABLE_MIME, makeChunks } = require("../services/evidenceTextExtraction");
+const evidenceTextIndex = require("../repositories/evidenceTextIndex");
+const { IMAGE_MIME, extractImageText } = require("../services/azureVisionOcrService");
 const { readiness } = require("../services/azureOpenAiService");
 
 const ENTITY_TYPES = ["RISK", "CONTROL", "AUDIT"];
@@ -133,6 +135,42 @@ const downloadEvidence = async (req, res) => {
   res.json({ url, expiresIn: 60 });
 };
 
+const indexImageEvidence = async (req, res) => {
+  const startedAt = Date.now();
+  const evidence = await evidenceRepository.findById(req.params.id);
+  if (!evidence?.file || !await canAccessEntity(evidence.entityType, evidence.entityId, req.user)) {
+    return res.status(404).json({ message: "Archivo de evidencia no encontrado." });
+  }
+  if (!IMAGE_MIME.has(evidence.file.mime)) return res.status(415).json({ message: "Selecciona una imagen PNG, JPEG o WebP." });
+  if ((process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production") &&
+      process.env.VERA_EVIDENCE_COMMENT_STORE !== "supabase") {
+    return res.status(503).json({ message: "El OCR requiere evidencias persistentes en producción." });
+  }
+  if (!readiness().available) return res.status(503).json({ message: "El OCR requiere Azure OpenAI activo y un modelo con visión." });
+  try {
+    const existing = await evidenceTextIndex.get(evidence.id);
+    if (existing.length) return res.set("Cache-Control", "no-store").json({ status: "ready", chunks: existing.length,
+      cached: true, truncated: false, durationMs: Date.now() - startedAt, usage: null });
+    const bytes = await evidenceStorage.downloadBytes(evidence.file);
+    const ocr = await extractImageText(bytes, evidence.file.mime);
+    const indexed = makeChunks([{ pageNumber: null, text: ocr.text }]);
+    if (indexed.chunks.length) await evidenceTextIndex.replace(evidence.id, indexed.chunks);
+    console.info(JSON.stringify({ event: "VERA_AI_IMAGE_OCR", status: 200, role: req.user.role,
+      chunks: indexed.chunks.length, durationMs: Date.now() - startedAt,
+      promptTokens: ocr.usage?.prompt_tokens ?? null, completionTokens: ocr.usage?.completion_tokens ?? null }));
+    return res.set("Cache-Control", "no-store").json({ status: indexed.chunks.length ? "ready" : "no-text",
+      chunks: indexed.chunks.length, cached: false, truncated: ocr.truncated || indexed.truncated,
+      durationMs: Date.now() - startedAt, usage: ocr.usage ? {
+        promptTokens: ocr.usage.prompt_tokens ?? null, completionTokens: ocr.usage.completion_tokens ?? null
+      } : null });
+  } catch (error) {
+    console.warn(JSON.stringify({ event: "VERA_AI_IMAGE_OCR_ERROR", status: error.status || 502,
+      durationMs: Date.now() - startedAt }));
+    return res.status(error.status === 415 || error.status === 503 ? error.status : 502)
+      .json({ message: error.status ? error.message : "No se pudo extraer texto de la imagen." });
+  }
+};
+
 const askEvidence = async (req, res) => {
   const startedAt = Date.now();
   const evidence = await evidenceRepository.findById(req.params.id);
@@ -168,4 +206,4 @@ const askEvidence = async (req, res) => {
   }
 };
 
-module.exports = { listEvidence, createEvidence, uploadEvidence, downloadEvidence, askEvidence };
+module.exports = { listEvidence, createEvidence, uploadEvidence, downloadEvidence, askEvidence, indexImageEvidence };

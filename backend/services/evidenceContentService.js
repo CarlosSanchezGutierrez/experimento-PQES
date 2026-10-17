@@ -2,6 +2,7 @@ const evidenceStorage = require("./evidenceStorage");
 const evidenceTextIndex = require("../repositories/evidenceTextIndex");
 const { extractEvidenceText, SEARCHABLE_MIME } = require("./evidenceTextExtraction");
 const { askAzureOpenAi } = require("./azureOpenAiService");
+const { IMAGE_MIME } = require("./azureVisionOcrService");
 
 const STOP_WORDS = new Set(["que", "cual", "como", "para", "este", "esta", "documento", "archivo", "evidencia",
   "sobre", "dice", "menciona", "dame", "del", "los", "las", "una", "uno", "resumen", "resume"]);
@@ -26,12 +27,17 @@ const indexFile = async (evidence, bytes) => {
 };
 
 const askEvidenceContent = async (evidence, question, role, { ask = askAzureOpenAi } = {}) => {
-  if (!evidence.file || !SEARCHABLE_MIME.has(evidence.file.mime)) {
-    const error = new Error("Solo se puede consultar el texto de archivos PDF o TXT privados.");
+  if (!evidence.file || !(SEARCHABLE_MIME.has(evidence.file.mime) || IMAGE_MIME.has(evidence.file.mime))) {
+    const error = new Error("Solo se puede consultar texto de PDF, TXT o imágenes privadas indexadas.");
     error.status = 415;
     throw error;
   }
   let chunks = await evidenceTextIndex.get(evidence.id);
+  if (!chunks.length && IMAGE_MIME.has(evidence.file.mime)) return {
+    answer: "Esta imagen aún no tiene texto indexado. Solicita primero la extracción con IA y comprueba el original.",
+    mode: "no-text", citations: [], coverage: { indexedChunks: 0, includedChunks: 0, partial: false },
+    asOf: new Date().toISOString(), usage: null
+  };
   if (!chunks.length) {
     const bytes = await evidenceStorage.downloadBytes(evidence.file);
     try { await indexFile(evidence, bytes); }

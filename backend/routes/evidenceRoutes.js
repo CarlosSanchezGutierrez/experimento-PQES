@@ -10,7 +10,8 @@ const {
   createEvidence,
   uploadEvidence,
   downloadEvidence,
-  askEvidence
+  askEvidence,
+  indexImageEvidence
 } = require("../controllers/evidenceController");
 const { rateLimit } = require("express-rate-limit");
 
@@ -19,6 +20,11 @@ router.get("/", verifyToken, listEvidence);
 router.get("/:id/download", verifyToken, downloadEvidence);
 router.post("/:id/ask", verifyToken, rateLimit({ windowMs: 15 * 60 * 1000, limit: 10,
   keyGenerator: (req) => String(req.user.id), standardHeaders: "draft-8", legacyHeaders: false }), askEvidence);
+router.post("/:id/index-image", rateLimit({ windowMs: 15 * 60 * 1000, limit: 30,
+  standardHeaders: "draft-8", legacyHeaders: false }), verifyToken,
+rateLimit({ windowMs: 15 * 60 * 1000, limit: 3,
+  keyGenerator: (req) => String(req.user.id), standardHeaders: "draft-8", legacyHeaders: false }),
+allowRoles(...RECORD_CREATE_ROLES), indexImageEvidence);
 
 // Crear o subir: Director excluido.
 router.post(

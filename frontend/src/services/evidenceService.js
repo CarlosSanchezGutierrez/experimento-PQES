@@ -36,3 +36,4 @@ export const getEvidenceDownloadUrl = async (id) => (await request(`/${encodeURI
 export const askEvidenceFile = async (id, question) => request(`/${encodeURIComponent(id)}/ask`, {
   method: "POST", body: JSON.stringify({ question })
 });
+export const indexEvidenceImage = async (id) => request(`/${encodeURIComponent(id)}/index-image`, { method: "POST" });
