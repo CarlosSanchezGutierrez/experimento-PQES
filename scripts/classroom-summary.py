@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 from pathlib import Path
 
@@ -20,6 +21,15 @@ def load_json(path):
 
 def result_label(value):
     return "PASS" if value == "success" else "FAIL" if value == "failure" else "NO DISPONIBLE"
+
+
+def source_link(label, path):
+    repository = os.getenv("GITHUB_REPOSITORY", "")
+    commit = os.getenv("GITHUB_COMMIT", "")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository) or not re.fullmatch(r"[0-9a-fA-F]{40}", commit):
+        return f"`{path}`"
+    server = os.getenv("GITHUB_SERVER_URL", "https://github.com").rstrip("/")
+    return f"[{label}]({server}/{repository}/blob/{commit}/{path})"
 
 
 quality = load_json(QUALITY_REPORT)
@@ -65,9 +75,9 @@ rows = [
     "",
     "## Alcance completo y casos pendientes",
     "",
-    f"La matriz trazable contiene **{planned_cases} casos** en [el plan de pruebas](https://github.com/humbertofigb15/VERA/blob/main/docs/testing/test-plan.md). Este run ejecuta las pruebas automatizadas implementadas; la existencia de un caso en la matriz no lo convierte en aprobado.",
+    f"La matriz trazable contiene **{planned_cases} casos** en {source_link('el plan de pruebas', 'docs/testing/test-plan.md')}. Este run ejecuta las pruebas automatizadas implementadas; la existencia de un caso en la matriz no lo convierte en aprobado.",
     "",
-    "- La prueba k6 de 150/250 usuarios no se dispara aquí: necesita staging aprobado, hostname permitido y credencial dedicada; consulta [el runbook de operaciones](https://github.com/humbertofigb15/VERA/blob/main/docs/testing/operations-runbook.md).",
+    f"- La prueba k6 de 150/250 usuarios no se dispara aquí: necesita staging aprobado, hostname permitido y credencial dedicada; consulta {source_link('el runbook de operaciones', 'docs/testing/operations-runbook.md')}.",
     "- Las pruebas de archivos binarios, persistencia, exportación y otras funciones ausentes siguen bloqueadas hasta implementar esas capacidades.",
     "- TLS, disponibilidad mensual, backup/restore, privacidad y pruebas con hardware/lectores reales requieren evidencia del ambiente o revisión manual.",
     "- Las pruebas de UI usan fixtures de API; no se deben interpretar como pruebas de integración con un backend desplegado.",
