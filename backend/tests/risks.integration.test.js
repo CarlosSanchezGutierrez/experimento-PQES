@@ -82,6 +82,7 @@ test("HU-14: risk registration validates fields, calculates level and retains ev
 test("HU-14: auditors only see risks assigned to them; active managers can manage the register", async (context) => {
   await withServer(context, async (baseUrl) => {
     const director = tokenFor(2);
+    const manager = tokenFor(3);
     const body = {
       title: `HU-14 scope ${Date.now()}`,
       description: "Exposición de prueba para comprobar el alcance del registro.",
@@ -91,7 +92,8 @@ test("HU-14: auditors only see risks assigned to them; active managers can manag
       impact: 2,
       note: "La exposición se mantiene moderada con los controles existentes."
     };
-    const createdResponse = await fetch(`${baseUrl}/api/risks`, json(director, "POST", body));
+    assert.equal((await fetch(`${baseUrl}/api/risks`, json(director, "POST", body))).status, 403);
+    const createdResponse = await fetch(`${baseUrl}/api/risks`, json(manager, "POST", body));
     assert.equal(createdResponse.status, 201);
     const created = (await createdResponse.json()).risk;
     const auditorResponse = await fetch(`${baseUrl}/api/risks`, json(tokenFor(5)));

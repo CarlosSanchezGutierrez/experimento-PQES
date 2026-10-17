@@ -23,7 +23,7 @@ const AUDITOR_ID = 5;
 
 // Crea una auditoría y la deja aprobada (y opcionalmente iniciada).
 const createApprovedAudit = async (baseUrl, { start = false } = {}) => {
-  const created = await fetch(`${baseUrl}/api/planning`, json(director, "POST", {
+  const created = await fetch(`${baseUrl}/api/planning`, json(manager, "POST", {
     title: `HU-12 edición ${Date.now()} ${Math.random()}`,
     objective: "Revisar controles de compras.",
     scope: "Compras y autorizaciones.",
@@ -38,17 +38,17 @@ const createApprovedAudit = async (baseUrl, { start = false } = {}) => {
   assert.equal(created.status, 201);
   const { proposal } = await created.json();
 
-  const approved = await fetch(`${baseUrl}/api/planning/${proposal.id}/approve`, json(director, "POST", { quarter: "Q4" }));
+  const approved = await fetch(`${baseUrl}/api/planning/${proposal.id}/approve`, json(manager, "POST", { quarter: "Q4" }));
   assert.equal(approved.status, 200);
 
   if (start) {
-    const started = await fetch(`${baseUrl}/api/planning/${proposal.id}/start`, json(director, "POST", {}));
+    const started = await fetch(`${baseUrl}/api/planning/${proposal.id}/start`, json(manager, "POST", {}));
     assert.equal(started.status, 200);
   }
   return proposal.id;
 };
 
-const edit = (baseUrl, id, body, token = director) =>
+const edit = (baseUrl, id, body, token = manager) =>
   fetch(`${baseUrl}/api/planning/${id}/details`, json(token, "PATCH", body));
 
 test("HU-12: se edita una auditoría aprobada, se recalcula el riesgo y queda en el historial", async (context) => {
@@ -73,7 +73,7 @@ test("HU-12: se edita una auditoría aprobada, se recalcula el riesgo y queda en
   assert.equal(audit.risk, "Alto");
   assert.deepEqual(changes.quarter, { from: "Q4", to: "Q1" });
 
-  const history = await (await fetch(`${baseUrl}/api/planning/${id}/history`, json(director))).json();
+  const history = await (await fetch(`${baseUrl}/api/planning/${id}/history`, json(manager))).json();
   const event = history.history.find((entry) => entry.action === "AUDIT_UPDATED");
   assert.ok(event, "debe registrarse el evento AUDIT_UPDATED");
   assert.ok(event.details.changes.objective);
@@ -107,15 +107,15 @@ test("HU-12: una auditoría en curso solo permite cambiar objetivo, responsable 
   assert.equal((await edit(baseUrl, id, { startDate: "2026-10-05" })).status, 400);
 });
 
-test("HU-12: no se editan auditorías cerradas y solo Director o Super Admin pueden editar", async (context) => {
+test("HU-12: no se editan auditorías cerradas y Director no puede editar", async (context) => {
   const baseUrl = await startTestServer(context, app);
   const id = await createApprovedAudit(baseUrl, { start: true });
 
-  assert.equal((await edit(baseUrl, id, { objective: "Cambio no autorizado." }, manager)).status, 403);
+  assert.equal((await edit(baseUrl, id, { objective: "Cambio no autorizado." }, director)).status, 403);
   assert.equal((await edit(baseUrl, id, { objective: "Cambio sin token." }, "token-invalido")).status, 401);
   assert.equal((await edit(baseUrl, "AUD-NO-EXISTE", { objective: "Nada." })).status, 404);
 
-  const closed = await fetch(`${baseUrl}/api/planning/${id}/close`, json(director, "POST", {}));
+  const closed = await fetch(`${baseUrl}/api/planning/${id}/close`, json(manager, "POST", {}));
   assert.equal(closed.status, 200);
   assert.equal((await edit(baseUrl, id, { objective: "Ya está cerrada." })).status, 409);
 });

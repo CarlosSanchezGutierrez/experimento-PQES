@@ -8,8 +8,8 @@ const dashboardCopy = {
     scopeLabel: "Portafolio completo"
   },
   DIRECTOR: {
-    title: "Decisiones del portafolio",
-    description: "Prioriza propuestas y da seguimiento a la ejecución.",
+    title: "Consulta del portafolio",
+    description: "Consulta propuestas y da seguimiento a la ejecución.",
     scopeLabel: "Portafolio completo"
   },
   GERENTE: {

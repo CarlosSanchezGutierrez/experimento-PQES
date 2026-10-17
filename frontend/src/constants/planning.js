@@ -16,8 +16,8 @@ export const RISK_FACTORS = [
 // Debe coincidir con los permisos de propuestas del backend.
 export const RISK_CONTROL_MANAGE_ROLES = ["SUPER_ADMIN", "GERENTE"];
 export const AUDIT_PROPOSAL_CREATE_ROLES = ["SUPER_ADMIN", "GERENTE", "JEFATURA"];
-export const AUDIT_PROPOSAL_DELETE_ROLES = ["SUPER_ADMIN"];
-export const PLANNING_APPROVE_ROLES = ["SUPER_ADMIN"];
+export const AUDIT_PROPOSAL_DELETE_ROLES = ["SUPER_ADMIN", "GERENTE"];
+export const PLANNING_APPROVE_ROLES = ["SUPER_ADMIN", "GERENTE"];
 
 export const EDITABLE_FIELDS_BY_STATUS = {
   APPROVED: ["objective", "responsibleId", "quarter", "startDate", "endDate", "likelihood", "impact"],

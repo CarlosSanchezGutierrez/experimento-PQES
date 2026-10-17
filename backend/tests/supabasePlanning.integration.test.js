@@ -52,13 +52,13 @@ test("HU-07/HU-09/HU-22/HU-23 use the Supabase planning source across API reques
   const created = (await createdResponse.json()).proposal;
   assert.equal(stored.size, 1);
 
-  const review = await fetch(`${base}/api/notifications`, auth(2));
+  const review = await fetch(`${base}/api/notifications`, auth(3));
   assert.equal(review.status, 200);
   assert.ok((await review.json()).notifications.some((item) => item.entityId === created.id));
 
-  const approval = await fetch(`${base}/api/planning/${created.id}/approve`, auth(2, "POST", { quarter: "Q2" }));
+  const approval = await fetch(`${base}/api/planning/${created.id}/approve`, auth(3, "POST", { quarter: "Q2" }));
   assert.equal(approval.status, 200);
-  const start = await fetch(`${base}/api/planning/${created.id}/start`, auth(2, "POST", {}));
+  const start = await fetch(`${base}/api/planning/${created.id}/start`, auth(3, "POST", {}));
   assert.equal(start.status, 200);
 
   const active = await fetch(`${base}/api/planning/active`, auth(5));

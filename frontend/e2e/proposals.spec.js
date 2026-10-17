@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { useSession } from "./fixtures.js";
 
 test("HU-22: proposal captures scope, justification and an estimated period", async ({ page }) => {
-  await useSession(page, "DIRECTOR", 2);
+  await useSession(page, "GERENTE", 3);
   const proposals = [];
   let submitted;
 

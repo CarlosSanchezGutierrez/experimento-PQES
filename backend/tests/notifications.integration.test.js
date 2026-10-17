@@ -39,18 +39,19 @@ test("HU-17: in-app pending inbox is derived from proposal states and scoped to 
     area: "Operaciones", year: 2026, quarter: "Q2", responsibleId: 5, endDate: dueDate, startDate: "2026-01-01"
   }));
   const activeProposal = (await activeResponse.json()).proposal;
-  const approval = await fetch(`${baseUrl}/api/planning/${activeProposal.id}/approve`, json(director, "POST", { quarter: "Q2" }));
+  const approval = await fetch(`${baseUrl}/api/planning/${activeProposal.id}/approve`, json(manager, "POST", { quarter: "Q2" }));
   assert.equal(approval.status, 200);
-  const started = await fetch(`${baseUrl}/api/planning/${activeProposal.id}/start`, json(director, "POST", {}));
+  const started = await fetch(`${baseUrl}/api/planning/${activeProposal.id}/start`, json(manager, "POST", {}));
   assert.equal(started.status, 200);
 
   const directorResponse = await fetch(`${baseUrl}/api/notifications`, json(director));
   const directorInbox = await directorResponse.json();
-  assert.ok(directorInbox.notifications.some((item) => item.entityId === openProposal.id && item.type === "PROPOSAL_REVIEW" && item.priority === "HIGH"));
+  assert.ok(!directorInbox.notifications.some((item) => item.entityId === openProposal.id && item.type === "PROPOSAL_REVIEW"));
   assert.ok(directorInbox.generatedAt);
   assert.equal(directorInbox.persisted, false);
 
   const managerInbox = (await (await fetch(`${baseUrl}/api/notifications`, json(manager))).json()).notifications;
+  assert.ok(managerInbox.some((item) => item.entityId === openProposal.id && item.type === "PROPOSAL_REVIEW" && item.priority === "HIGH"));
   assert.ok(managerInbox.some((item) => item.entityId === openProposal.id && item.type === "PROPOSAL_TRACK"));
 
   const auditorInbox = (await (await fetch(`${baseUrl}/api/notifications`, json(auditor))).json()).notifications;

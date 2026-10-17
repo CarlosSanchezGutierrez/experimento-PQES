@@ -15,8 +15,8 @@ test("login submits credentials and opens the role dashboard", async ({ page }) 
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
 
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole("heading", { name: "Decisiones del portafolio" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Nueva propuesta" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Consulta del portafolio" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Nueva propuesta" })).toHaveCount(0);
 });
 
 test("login explains invalid credentials without showing technical details", async ({ page }) => {

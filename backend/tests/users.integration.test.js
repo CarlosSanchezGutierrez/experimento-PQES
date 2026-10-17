@@ -39,10 +39,14 @@ test("RF-02/RF-30: account listings and role changes enforce administrator bound
   assert.equal(auditorList.status, 403);
   assert.equal((await request(baseUrl, "/api/users")).status, 401);
 
-  const change = await request(baseUrl, `/api/users/${target.id}/role`, {
+  const directorChange = await request(baseUrl, `/api/users/${target.id}/role`, {
     method: "PATCH",
     token: tokenFor(2),
     body: { role: "AUDITOR" }
+  });
+  assert.equal(directorChange.status, 403);
+  const change = await request(baseUrl, `/api/users/${target.id}/role`, {
+    method: "PATCH", token: tokenFor(1), body: { role: "AUDITOR" }
   });
   assert.equal(change.status, 200);
   assert.equal((await change.json()).user.role, "AUDITOR");
@@ -86,22 +90,26 @@ test("RF-02/RF-03: disabling an account immediately invalidates its existing ses
     token: tokenFor(2),
     body: { active: false }
   });
-  assert.equal(disabled.status, 200);
-  assert.equal((await disabled.json()).user.status, "DISABLED");
+  assert.equal(disabled.status, 403);
+  const adminDisabled = await request(baseUrl, `/api/users/${target.id}/status`, {
+    method: "PATCH", token: tokenFor(1), body: { active: false }
+  });
+  assert.equal(adminDisabled.status, 200);
+  assert.equal((await adminDisabled.json()).user.status, "DISABLED");
 
   const denied = await request(baseUrl, "/api/dashboard", { token: existingSession });
   assert.equal(denied.status, 401);
 
   const invalidStatus = await request(baseUrl, `/api/users/${target.id}/status`, {
     method: "PATCH",
-    token: tokenFor(2),
+    token: tokenFor(1),
     body: { active: "false" }
   });
   assert.equal(invalidStatus.status, 400);
 
   const enabled = await request(baseUrl, `/api/users/${target.id}/status`, {
     method: "PATCH",
-    token: tokenFor(2),
+    token: tokenFor(1),
     body: { active: true }
   });
   assert.equal(enabled.status, 200);

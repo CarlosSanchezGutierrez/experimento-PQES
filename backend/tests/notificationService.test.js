@@ -11,7 +11,7 @@ test("notification service ranks high before medium and low items deterministica
     { id: "AUD-APPROVED", status: "APPROVED", title: "Lista", area: "C", risk: "Bajo", quarter: "Q4", year: 2026, createdAt: "2026-10-08T10:00:00.000Z" }
   ];
 
-  const notifications = buildNotifications({ proposals, user: { id: 2, role: "DIRECTOR" }, now });
+  const notifications = buildNotifications({ proposals, user: { id: 3, role: "GERENTE" }, now });
   assert.deepEqual(notifications.map(({ priority }) => priority), ["HIGH", "MEDIUM", "MEDIUM"]);
   assert.equal(notifications[0].id, "PROPOSAL_REVIEW:AUD-HIGH");
   assert.equal(notifications[1].id, "PROPOSAL_REVIEW:AUD-MED");
