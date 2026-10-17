@@ -6,6 +6,27 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/assistant/brief", (route) => route.fulfill({ json: { role: "AUDITOR", signals: [] } }));
 });
 
+test("Copiloto: busca evidencias visibles y muestra el fragmento y su cobertura", async ({ page }) => {
+  await useSession(page, "AUDITOR", 5);
+  await page.route("**/api/assistant/status", (route) => route.fulfill({ json: { available: true, mode: "read-only" } }));
+  await page.route("**/api/assistant/search-evidence", (route) => {
+    expect(route.request().postDataJSON().question).toContain("proveedores");
+    return route.fulfill({ json: { answer: "La revisión es mensual.", mode: "document-search",
+      citations: [{ sourceId: "evidence:EVD-1:chunk:0", type: "Fragmento de evidencia", title: "Informe de proveedores",
+        path: "/evidencias#evidence-EVD-1", excerpt: "La revisión de proveedores es mensual.", pageNumber: 2 }],
+      references: [], coverage: { visibleFiles: 2, searchedFiles: 2, includedChunks: 1,
+        partial: false, indexedOnly: true }, asOf: "2026-10-16T20:20:00.000Z", durationMs: 120 } });
+  });
+  await page.goto("/asistente");
+  await page.getByLabel("Buscar también en textos de evidencias visibles").check();
+  await page.getByLabel("Tu pregunta").fill("¿Qué dice el informe de proveedores?");
+  await page.getByRole("button", { name: "Enviar pregunta" }).click();
+  await expect(page.getByText("La revisión es mensual.", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Página 2 · La revisión de proveedores es mensual/)).toBeVisible();
+  await expect(page.getByRole("link", { name: /Informe de proveedores/ })).toHaveAttribute("href", "/evidencias#evidence-EVD-1");
+  await expect(page.getByText(/2 de 2 archivos visibles/)).toBeVisible();
+});
+
 test("Copiloto: distingue un indicador calculado de una respuesta generada", async ({ page }) => {
   await useSession(page, "AUDITOR", 5);
   await page.route("**/api/assistant/status", (route) => route.fulfill({ json: { available: true, mode: "read-only" } }));

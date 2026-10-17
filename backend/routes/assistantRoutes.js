@@ -5,6 +5,7 @@ const { buildAssistantContext } = require("../services/assistantContextService")
 const { getVerifiedAnswer } = require("../services/assistantVerifiedAnswers");
 const { askAzureOpenAi, readiness } = require("../services/azureOpenAiService");
 const { buildAuditDossier } = require("../services/assistantDossierService");
+const { searchAssistantEvidence } = require("../services/assistantEvidenceSearchService");
 
 const router = express.Router();
 router.use(verifyToken);
@@ -54,6 +55,37 @@ router.post("/dossier/:auditId", rateLimit({ windowMs: 15 * 60 * 1000, limit: 5,
     console.warn(JSON.stringify({ event: "VERA_AI_DOSSIER_ERROR", status: 502,
       durationMs: Date.now() - startedAt }));
     return res.status(502).json({ message: "No se pudo preparar el briefing del expediente." });
+  }
+});
+
+router.post("/search-evidence", rateLimit({ windowMs: 15 * 60 * 1000, limit: 5,
+  keyGenerator: (req) => String(req.user.id), standardHeaders: "draft-8", legacyHeaders: false }), async (req, res) => {
+  const startedAt = Date.now();
+  const question = req.body?.question;
+  const focus = req.body?.focus ?? null;
+  if (typeof question !== "string" || question.trim().length < 3 || question.length > 500 ||
+      (focus !== null && (typeof focus !== "object" || Array.isArray(focus)))) {
+    return res.status(400).json({ message: "Escribe una pregunta válida de 3 a 500 caracteres." });
+  }
+  try {
+    if (!readiness().available || ((process.env.NODE_ENV === "production" ||
+        process.env.VERCEL_ENV === "production") && process.env.VERA_EVIDENCE_COMMENT_STORE !== "supabase")) {
+      return res.status(503).json({ message: "La búsqueda requiere Azure OpenAI y evidencias persistentes." });
+    }
+    const result = await searchAssistantEvidence(req.user, question.trim(), focus);
+    const durationMs = Date.now() - startedAt;
+    console.info(JSON.stringify({ event: "VERA_AI_EVIDENCE_SEARCH", status: 200, role: req.user.role,
+      mode: result.mode, durationMs, promptTokens: result.usage?.prompt_tokens ?? null,
+      completionTokens: result.usage?.completion_tokens ?? null }));
+    return res.json({ ...result, durationMs, usage: result.usage ? {
+      promptTokens: result.usage.prompt_tokens ?? null,
+      completionTokens: result.usage.completion_tokens ?? null
+    } : null });
+  } catch (error) {
+    console.warn(JSON.stringify({ event: "VERA_AI_EVIDENCE_SEARCH_ERROR", status: error.status || 502,
+      durationMs: Date.now() - startedAt }));
+    if ([400, 403, 404, 503].includes(error.status)) return res.status(error.status).json({ message: error.message });
+    return res.status(502).json({ message: "No se pudo buscar en las evidencias." });
   }
 });
 
