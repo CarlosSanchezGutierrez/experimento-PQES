@@ -49,6 +49,12 @@ function PlanningHistoryButton({ proposal, compact = false }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const currentUser = JSON.parse(
+    localStorage.getItem("user") || "null"
+  );
+
+  const canComment = currentUser?.role !== "DIRECTOR";
+
   const load = async () => {
     setLoading(true);
     try {
@@ -85,7 +91,7 @@ function PlanningHistoryButton({ proposal, compact = false }) {
           </section>
           <section className="history-section"><h3><MessageSquareText size={17} /> Comentarios <span>{comments.length}</span></h3>
             {comments.length === 0 ? <p className="history-empty">Aún no hay comentarios.</p> : <ul className="history-comments">{comments.map((comment) => <li key={comment.id}><div><strong>{comment.author.username}</strong><small>{ROLE_LABELS[comment.author.role] || comment.author.role} · {formatDate(comment.createdAt)}</small></div><p>{comment.text}</p></li>)}</ul>}
-            <form className="history-comment-form" onSubmit={submit}><label htmlFor={`comment-${proposal.id}`}>Agregar comentario</label><textarea id={`comment-${proposal.id}`} required minLength={3} maxLength={2000} value={text} onChange={(event) => setText(event.target.value)} placeholder="Comparte contexto o una actualización del expediente." /><div><small>{text.length}/2,000 caracteres</small><button type="submit" className="primary-action" disabled={saving || text.trim().length < 3}><Send size={15} />{saving ? "Enviando..." : "Publicar"}</button></div></form>
+            {canComment && (<form className="history-comment-form" onSubmit={submit}><label htmlFor={`comment-${proposal.id}`}>Agregar comentario</label><textarea id={`comment-${proposal.id}`} required minLength={3} maxLength={2000} value={text} onChange={(event) => setText(event.target.value)} placeholder="Comparte contexto o una actualización del expediente." /><div><small>{text.length}/2,000 caracteres</small><button type="submit" className="primary-action" disabled={saving || text.trim().length < 3}><Send size={15} />{saving ? "Enviando..." : "Publicar"}</button></div></form>)}
           </section>
         </>}
       </section>

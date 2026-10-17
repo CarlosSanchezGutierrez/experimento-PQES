@@ -21,7 +21,7 @@ import Evidencias from "./pages/Evidencias";
 import Trimestres, { TrimestreDetalle } from "./pages/Trimestres";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AssistantConversationProvider from "./contexts/AssistantConversationProvider";
-import { USER_ADMIN_ROLES } from "./constants/roles";
+import { USER_VIEW_ROLES } from "./constants/roles";
 
 
 function App() {
@@ -49,7 +49,7 @@ function App() {
         <Route
           path="/usuarios"
           element={
-            <ProtectedRoute allowedRoles={USER_ADMIN_ROLES}>
+            <ProtectedRoute allowedRoles={USER_VIEW_ROLES}>
               <Usuarios />
             </ProtectedRoute>
           }

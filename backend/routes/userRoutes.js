@@ -4,7 +4,7 @@ const router = express.Router();
 
 const { verifyToken } = require("../middleware/authMiddleware");
 const { allowRoles } = require("../middleware/roleMiddleware");
-const { ROLES, USER_ADMIN_ROLES } = require("../config/roles");
+const { ROLES, USER_VIEW_ROLES, USER_ADMIN_ROLES } = require("../config/roles");
 const {
   listUsers,
   updateUserRole,
@@ -34,5 +34,21 @@ router.get(
     });
   }
 );
+
+// Consultar usuarios: Super Admin y Director.
+router.get(
+  "/",
+  verifyToken,
+  allowRoles(...USER_VIEW_ROLES),
+  listUsers
+);
+
+// Aprobar o rechazar solicitudes: solo Super Admin.
+router.post("/:id/approve", verifyToken, allowRoles(ROLES.SUPER_ADMIN), approveRequest);
+router.post("/:id/reject", verifyToken, allowRoles(ROLES.SUPER_ADMIN), rejectRequest);
+
+// Modificar roles y estados: solo Super Admin.
+router.patch("/:id/role", verifyToken, allowRoles(...USER_ADMIN_ROLES), updateUserRole);
+router.patch("/:id/status", verifyToken, allowRoles(...USER_ADMIN_ROLES), updateUserStatus);
 
 module.exports = router;

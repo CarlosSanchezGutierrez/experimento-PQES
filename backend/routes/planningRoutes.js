@@ -26,7 +26,15 @@ router.get("/search", verifyToken, searchPlanningAudits);
 router.get("/active", verifyToken, listActiveAudits);
 router.get("/auditors", verifyToken, allowRoles(...AUDIT_PROPOSAL_CREATE_ROLES), listAuditors);
 router.get("/:id/history", verifyToken, getHistory);
-router.post("/:id/comments", verifyToken, addComment);
+const { RECORD_CREATE_ROLES } = require("../config/roles");
+
+// Registrar comentarios: Director excluido.
+router.post(
+  "/:id/comments",
+  verifyToken,
+  allowRoles(...RECORD_CREATE_ROLES),
+  addComment
+);
 
 router.post("/", verifyToken, allowRoles(...AUDIT_PROPOSAL_CREATE_ROLES), createProposal);
 router.put("/:id", verifyToken, allowRoles(...AUDIT_PROPOSAL_CREATE_ROLES), updateProposal);
