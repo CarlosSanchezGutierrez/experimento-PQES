@@ -1,6 +1,7 @@
 const memory = new Map();
 const TABLE = "vera_evidence_text_chunks";
 const VALID_ID = /^EVD-[A-Za-z0-9-]{1,80}$/;
+const MAX_SEARCH_FILES = 500;
 
 class EvidenceIndexError extends Error {
   constructor(message) { super(message); this.status = 503; }
@@ -70,4 +71,38 @@ const replace = async (evidenceId, chunks) => {
   return chunks.length;
 };
 
-module.exports = { EvidenceIndexError, get, replace };
+const search = async (evidenceIds, question) => {
+  if (!Array.isArray(evidenceIds) || evidenceIds.length > MAX_SEARCH_FILES ||
+      evidenceIds.some((id) => typeof id !== "string" || !VALID_ID.test(id)) ||
+      typeof question !== "string" || question.trim().length < 3 || question.length > 500) {
+    throw new EvidenceIndexError("La búsqueda privada no es válida.");
+  }
+  if (!evidenceIds.length) return [];
+  if (!configured()) {
+    const words = [...new Set(question.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .match(/[\p{L}\p{N}]{4,}/gu) || [])];
+    return evidenceIds.flatMap((evidenceId) => (memory.get(evidenceId) || []).map((item) => {
+      const content = item.content.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return { ...item, evidenceId, score: words.reduce((sum, word) => sum + Number(content.includes(word)), 0) };
+    })).filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score || a.evidenceId.localeCompare(b.evidenceId) || a.chunkIndex - b.chunkIndex)
+      .slice(0, 5);
+  }
+  const { root, key } = config();
+  const url = new URL("/rest/v1/rpc/vera_search_evidence_text_chunks", root);
+  const headers = { apikey: key, Accept: "application/json", "Content-Type": "application/json" };
+  if (!key.startsWith("sb_secret_")) headers.Authorization = `Bearer ${key}`;
+  let response;
+  try {
+    response = await fetch(url, { method: "POST", headers,
+      body: JSON.stringify({ p_evidence_ids: evidenceIds, p_query: question, p_limit: 5 }),
+      signal: AbortSignal.timeout(10_000) });
+  } catch { throw new EvidenceIndexError("No se pudo conectar con el índice privado de evidencias."); }
+  if (!response.ok) throw new EvidenceIndexError("El índice privado de evidencias rechazó la búsqueda.");
+  const rows = await response.json();
+  if (!Array.isArray(rows)) throw new EvidenceIndexError("El índice privado devolvió una búsqueda inválida.");
+  return rows.map((item) => ({ evidenceId: item.evidence_id, chunkIndex: item.chunk_index,
+    pageNumber: item.page_number, content: item.content, score: item.score }));
+};
+
+module.exports = { EvidenceIndexError, MAX_SEARCH_FILES, get, replace, search };

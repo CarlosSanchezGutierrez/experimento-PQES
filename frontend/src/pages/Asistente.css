@@ -24,6 +24,9 @@
 .assistant-error { padding: 12px; border-radius: 9px; background: #fff0f0; color: #a52a2a; font-size: 13px; }
 .assistant-form { margin-top: 22px; border-top: 1px solid #edf0f1; padding-top: 16px; }
 .assistant-form label { display: block; margin-bottom: 8px; color: #263d47; font-weight: 600; font-size: 13px; }
+.assistant-form .assistant-search-option { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.assistant-search-option input { accent-color: #176c77; }
+.assistant-source-facts { overflow-wrap: anywhere; }
 .assistant-form > div { display: flex; gap: 8px; }
 .assistant-form textarea { flex: 1; min-width: 0; padding: 11px; border: 1px solid #cbd9dc; border-radius: 8px; resize: vertical; font: inherit; font-size: 14px; }
 .assistant-form button { align-self: flex-end; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 8px; background: #176c77; color: #fff; cursor: pointer; }

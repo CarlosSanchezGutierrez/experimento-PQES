@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Bot, FileText, RotateCcw, Send } from "lucide-react";
-import { askAssistant, getAssistantBrief, getAssistantStatus, getAuditDossier } from "../services/assistantService";
+import { askAssistant, getAssistantBrief, getAssistantStatus, getAuditDossier, searchAssistantEvidence } from "../services/assistantService";
 import { AssistantConversationContext } from "../contexts/AssistantConversationContext";
 import "../pages/Asistente.css";
 
@@ -23,6 +23,7 @@ function AssistantPanel({ focus = null }) {
   const [reason, setReason] = useState(null);
   const [brief, setBrief] = useState([]);
   const [question, setQuestion] = useState("");
+  const [withEvidence, setWithEvidence] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [dossier, setDossier] = useState(null);
@@ -42,12 +43,15 @@ function AssistantPanel({ focus = null }) {
   const submit = async (event) => {
     event.preventDefault();
     const value = question.trim();
-    if (!available || busy || value.length < 3 || value.length > 800) return;
+    if (!available || busy || value.length < 3 || value.length > (withEvidence ? 500 : 800)) return;
     const history = messages.slice(-6).map(({ role, text }) => ({ role, text: text.slice(0, 800) }));
     setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", text: value }]);
     setQuestion(""); setBusy(true); setError("");
     try {
-      const result = await askAssistant(value, { history, focus: focus ? { type: focus.type, id: focus.id } : null });
+      const selectedFocus = focus ? { type: focus.type, id: focus.id } : null;
+      const result = withEvidence
+        ? await searchAssistantEvidence(value, selectedFocus)
+        : await askAssistant(value, { history, focus: selectedFocus });
       setMessages((current) => [...current, { id: crypto.randomUUID(), role: "assistant", text: result.answer,
         mode: result.mode, metric: result.metric,
         citations: result.citations || [], references: result.references || [], coverage: result.coverage,
@@ -98,18 +102,19 @@ function AssistantPanel({ focus = null }) {
     </div>}
     <div className="assistant-messages" aria-live="polite">{messages.map((message) => <article key={message.id} className={`assistant-message ${message.role}`}>
       <strong>{message.role === "user" ? "Tú" : "Asistente VERA"}</strong><p>{message.text}</p>
-      {message.role === "assistant" && <><small className="assistant-answer-note">{message.mode === "computed" ? "Dato calculado desde registros autorizados" : "Respuesta generada · comprueba el expediente"}{Number.isFinite(message.durationMs) ? ` · ${(message.durationMs / 1000).toFixed(1)} s` : ""}</small>
+      {message.role === "assistant" && <><small className="assistant-answer-note">{message.mode === "computed" ? "Dato calculado desde registros autorizados" : message.mode === "document-search" ? "Respuesta con fragmentos de evidencias · comprueba el archivo" : ["no-match", "uncited"].includes(message.mode) ? "Sin respuesta documental respaldada" : "Respuesta generada · comprueba el expediente"}{Number.isFinite(message.durationMs) ? ` · ${(message.durationMs / 1000).toFixed(1)} s` : ""}</small>
         {message.asOf && <time className="assistant-answer-note" dateTime={message.asOf}>Datos consultados: {new Date(message.asOf).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })}</time>}
-        {message.mode !== "computed" && message.coverage?.partial && <small className="assistant-answer-note">Se consultó una muestra de expedientes visibles; los conteos abarcan el total de tu alcance.</small>}
+        {message.coverage?.indexedOnly && <small className="assistant-answer-note">Se buscaron fragmentos ya indexados en {message.coverage.searchedFiles} de {message.coverage.visibleFiles} archivos visibles. Los archivos antiguos pueden requerir una consulta individual para indexarse.</small>}
+        {message.mode !== "computed" && message.coverage?.partial && <small className="assistant-answer-note">{message.coverage.indexedOnly ? "La cantidad de archivos superó el límite de esta búsqueda; el resultado puede ser parcial." : "Se consultó una muestra de expedientes visibles; los conteos abarcan el total de tu alcance."}</small>}
         {message.metric && <div className="assistant-citations"><b>Indicador calculado</b><ul><li><Link to={message.metric.path}>{message.metric.label}: {message.metric.count} <ArrowRight size={13} aria-hidden="true" /></Link></li></ul></div>}
-        {message.citations?.length > 0 && <div className="assistant-citations"><b>Registros citados</b><small>Campos consultados al responder; abre el expediente para ver su estado actual.</small><ul>{message.citations.map((item) => <li key={item.sourceId}><Link to={item.path}>{item.type}: {item.title} <ArrowRight size={13} aria-hidden="true" /></Link>{item.facts?.length > 0 && <span className="assistant-source-facts">{item.facts.map((fact) => `${fact.label}: ${fact.value}`).join(" · ")}</span>}</li>)}</ul></div>}
+        {message.citations?.length > 0 && <div className="assistant-citations"><b>Registros citados</b><small>Campos consultados al responder; abre el expediente para ver su estado actual.</small><ul>{message.citations.map((item) => <li key={item.sourceId}><Link to={item.path}>{item.type}: {item.title} <ArrowRight size={13} aria-hidden="true" /></Link>{item.facts?.length > 0 && <span className="assistant-source-facts">{item.facts.map((fact) => `${fact.label}: ${fact.value}`).join(" · ")}</span>}{item.excerpt && <span className="assistant-source-facts">{item.pageNumber ? `Página ${item.pageNumber} · ` : ""}{item.excerpt}</span>}</li>)}</ul></div>}
         {message.citations?.length === 0 && message.mode !== "computed" && <small className="assistant-answer-note">Sin registros citados en esta respuesta.</small>}
         {message.references?.length > 0 && <details><summary>Registros relacionados ({message.references.length})</summary><ul>{message.references.map((item) => <li key={item.sourceId || `${item.type}:${item.id}`}><Link to={item.path}>{item.type}: {item.title} <ArrowRight size={13} aria-hidden="true" /></Link></li>)}</ul></details>}
       </>}</article>)}</div>
     {busy && <p className="assistant-state" role="status">Consultando información autorizada...</p>}
     {error && <p className="assistant-error" role="alert">{error}</p>}
     {messages.length > 0 && <button className="assistant-clear" type="button" onClick={() => { setMessages([]); setError(""); }}><RotateCcw size={14} aria-hidden="true" /> Nueva conversación</button>}
-    <form className="assistant-form" onSubmit={submit}><label htmlFor="assistant-question">Tu pregunta</label><div><textarea id="assistant-question" value={question} onChange={(event) => setQuestion(event.target.value)} maxLength={800} rows={3} placeholder="Escribe una pregunta sobre VERA..." disabled={!available || busy} /><button type="submit" disabled={!available || busy || question.trim().length < 3} aria-label="Enviar pregunta"><Send size={19} aria-hidden="true" /></button></div><small>{question.length}/800 caracteres · No escribas contraseñas ni claves.</small></form>
+    <form className="assistant-form" onSubmit={submit}><label htmlFor="assistant-question">Tu pregunta</label><label className="assistant-search-option"><input type="checkbox" checked={withEvidence} onChange={(event) => setWithEvidence(event.target.checked)} disabled={!available || busy} /> Buscar también en textos de evidencias visibles</label><div><textarea id="assistant-question" value={question} onChange={(event) => setQuestion(event.target.value)} maxLength={withEvidence ? 500 : 800} rows={3} placeholder="Escribe una pregunta sobre VERA..." disabled={!available || busy} /><button type="submit" disabled={!available || busy || question.trim().length < 3 || question.trim().length > (withEvidence ? 500 : 800)} aria-label="Enviar pregunta"><Send size={19} aria-hidden="true" /></button></div><small>{question.length}/{withEvidence ? 500 : 800} caracteres · No escribas contraseñas ni claves.</small></form>
   </section>;
 }
 

@@ -25,6 +25,16 @@ export const askAssistant = async (question, { history = [], focus = null } = {}
   return data;
 };
 
+export const searchAssistantEvidence = async (question, focus = null) => {
+  const response = await fetch("/api/assistant/search-evidence", {
+    method: "POST", headers: { ...headers(), "Content-Type": "application/json" },
+    body: JSON.stringify({ question, focus })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "No se pudieron consultar las evidencias.");
+  return data;
+};
+
 export const getAuditDossier = async (auditId) => {
   const response = await fetch(`/api/assistant/dossier/${encodeURIComponent(auditId)}`, {
     method: "POST", headers: headers()
