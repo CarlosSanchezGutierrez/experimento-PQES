@@ -40,3 +40,38 @@ test("Evidencias IA: consulta un TXT visible y muestra el fragmento citado en m�
   expect(asked).toBe(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - visualViewport.width)).toBeLessThanOrEqual(1);
 });
+
+test("Evidencias IA: OCR de imagen es explícito y después permite consultar fragmentos", async ({ page }) => {
+  await useSession(page, "GERENTE", 3);
+  const evidence = { id: "EVD-IMG", title: "Captura de revisión", description: "Imagen del control.",
+    evidenceType: "SCREENSHOT", entityType: "RISK", entityId: "RSK-IMG", entityTitle: "Riesgo de compras",
+    author: { name: "Gerencia" }, createdAt: "2026-10-17T10:00:00.000Z",
+    file: { mime: "image/png", size: 85000 } };
+  await page.route("**/api/risks**", (route) => route.fulfill({ json: { risks: [] } }));
+  await page.route("**/api/controls**", (route) => route.fulfill({ json: { controls: [] } }));
+  await page.route("**/api/planning**", (route) => route.fulfill({ json: { proposals: [] } }));
+  let ocrCalls = 0;
+  await page.route("**/api/evidence/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/index-image")) {
+      ocrCalls += 1;
+      return route.fulfill({ json: { status: "ready", chunks: 1, cached: false, truncated: false } });
+    }
+    if (path.endsWith("/ask")) return route.fulfill({ json: { answer: "Revisión mensual.", mode: "generated",
+      asOf: "2026-10-17T12:00:00.000Z", coverage: { indexedChunks: 1, includedChunks: 1, partial: false },
+      citations: [{ sourceId: "evidence:EVD-IMG:chunk:0", evidenceId: evidence.id, title: evidence.title,
+        pageNumber: null, excerpt: "Control revisado mensualmente.", path: "/evidencias#evidence-EVD-IMG" }] } });
+    return route.fulfill({ json: { evidence: [evidence] } });
+  });
+  await page.goto("/evidencias");
+  await page.getByRole("button", { name: "Consultar contenido con IA" }).click();
+  const dialog = page.getByRole("dialog", { name: "Preguntar sobre Captura de revisión" });
+  await expect(dialog.getByText(/envía esta imagen privada al recurso Azure/)).toBeVisible();
+  expect(ocrCalls).toBe(0);
+  await dialog.getByRole("button", { name: "Extraer texto de imagen con IA" }).click();
+  await expect(dialog.getByText(/1 fragmento de imagen disponible/)).toBeVisible();
+  expect(ocrCalls).toBe(1);
+  await dialog.getByLabel("Pregunta sobre el contenido").fill("¿Con qué frecuencia se revisa el control?");
+  await dialog.getByRole("button", { name: "Consultar archivo" }).click();
+  await expect(dialog.getByText("Control revisado mensualmente.")).toBeVisible();
+});

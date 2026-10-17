@@ -16,6 +16,8 @@ El chat mantiene un hilo separado por expediente y otro general durante la sesi�
 
 La [aceptación puntual en producción](docs/ai-production-acceptance.md) incluye un comando PowerShell para comprobar acceso público, sesión, disponibilidad, prioridades, una respuesta real de Azure y la cita de un riesgo visible, con tiempos en terminal y sin guardar credenciales ni respuestas.
 
+Las evidencias privadas PDF y TXT se pueden consultar con fragmentos citados. En PNG, JPEG y WebP, el usuario autorizado puede **iniciar explícitamente** la extracción de texto con Azure OpenAI y después preguntar sobre lo indexado. El OCR de imágenes requiere un despliegue Azure con visión; los PDF escaneados todavía no se procesan como imagen. La [guía de evidencias con IA](docs/ai-evidence-content.md) describe permisos, límites y verificación.
+
 La [entrega de alcance del 16 de octubre](docs/entrega-alcance-2026-10-16.md) resume PRs, resultados medidos y responsabilidades pendientes, y separa HU-34 como nuevo alcance.
 
 ## Funcionalidades actuales
