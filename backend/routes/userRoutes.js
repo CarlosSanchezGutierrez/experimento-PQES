@@ -14,8 +14,8 @@ const {
 } = require("../controllers/userController");
 
 
-// HU-01: creación y gestión de usuarios
-router.get("/", verifyToken, allowRoles(...USER_ADMIN_ROLES), listUsers);
+// HU-01: consulta de usuarios para Super Admin y Director.
+router.get("/", verifyToken, allowRoles(...USER_VIEW_ROLES), listUsers);
 
 // HU-01: solicitudes de registro (solo Super Admin)
 router.post("/:id/approve", verifyToken, allowRoles(ROLES.SUPER_ADMIN), approveRequest);
@@ -34,21 +34,5 @@ router.get(
     });
   }
 );
-
-// Consultar usuarios: Super Admin y Director.
-router.get(
-  "/",
-  verifyToken,
-  allowRoles(...USER_VIEW_ROLES),
-  listUsers
-);
-
-// Aprobar o rechazar solicitudes: solo Super Admin.
-router.post("/:id/approve", verifyToken, allowRoles(ROLES.SUPER_ADMIN), approveRequest);
-router.post("/:id/reject", verifyToken, allowRoles(ROLES.SUPER_ADMIN), rejectRequest);
-
-// Modificar roles y estados: solo Super Admin.
-router.patch("/:id/role", verifyToken, allowRoles(...USER_ADMIN_ROLES), updateUserRole);
-router.patch("/:id/status", verifyToken, allowRoles(...USER_ADMIN_ROLES), updateUserStatus);
 
 module.exports = router;

@@ -55,11 +55,11 @@ test("HU-18: contextual history shows proposal lifecycle events and comments wit
   const hiddenComment = await fetch(`${baseUrl}/api/planning/${notAssignedProposal.id}/comments`, json(auditor, "POST", { text: "Comentario fuera de alcance." }));
   assert.equal(hiddenComment.status, 404);
 
-  const approval = await fetch(`${baseUrl}/api/planning/${proposal.id}/approve`, json(director, "POST", { quarter: "Q2" }));
+  const approval = await fetch(`${baseUrl}/api/planning/${proposal.id}/approve`, json(manager, "POST", { quarter: "Q2" }));
   assert.equal(approval.status, 200);
-  const started = await fetch(`${baseUrl}/api/planning/${proposal.id}/start`, json(director, "POST", {}));
+  const started = await fetch(`${baseUrl}/api/planning/${proposal.id}/start`, json(manager, "POST", {}));
   assert.equal(started.status, 200);
-  const closed = await fetch(`${baseUrl}/api/planning/${proposal.id}/close`, json(director, "POST", {}));
+  const closed = await fetch(`${baseUrl}/api/planning/${proposal.id}/close`, json(manager, "POST", {}));
   assert.equal(closed.status, 200);
 
   const invalidComment = await fetch(`${baseUrl}/api/planning/${proposal.id}/comments`, json(auditor, "POST", { text: "  " }));
