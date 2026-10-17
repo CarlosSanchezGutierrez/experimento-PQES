@@ -5,17 +5,19 @@
 <p align="center">Un recorrido verificable desde la propuesta hasta el seguimiento.</p>
 
 <p align="center">
-  <img src="https://github.com/humbertofigb15/VERA/actions/workflows/quality.yml/badge.svg?branch=main" alt="Estado de calidad en main">
-  <img src="https://github.com/humbertofigb15/VERA/actions/workflows/e2e.yml/badge.svg?branch=main" alt="Estado E2E en main">
-  <img src="https://github.com/humbertofigb15/VERA/actions/workflows/codeql.yml/badge.svg?branch=main" alt="Estado de CodeQL en main">
+  <img src="https://github.com/CarlosSanchezGutierrez/experimento-PQES/actions/workflows/quality.yml/badge.svg?branch=main" alt="Estado de calidad de PQES en main">
+  <img src="https://github.com/CarlosSanchezGutierrez/experimento-PQES/actions/workflows/e2e.yml/badge.svg?branch=main" alt="Estado E2E de PQES en main">
+  <img src="https://github.com/CarlosSanchezGutierrez/experimento-PQES/actions/workflows/codeql.yml/badge.svg?branch=main" alt="Estado de CodeQL de PQES en main">
 </p>
 
 <p align="center">
-  <a href="https://github.com/humbertofigb15/VERA/wiki">Centro de conocimiento</a> ·
-  <a href="https://vera-salva-ventures.vercel.app">Abrir aplicación</a> ·
-  <a href="https://github.com/humbertofigb15/VERA/actions/workflows/classroom-quality.yml">Ver calidad completa</a> ·
+  <a href="docs/pqes/README.md">Plan de modernización PQES</a> ·
+  <a href="https://github.com/humbertofigb15/VERA/wiki">Wiki de referencia VERA</a> ·
+  <a href="https://github.com/CarlosSanchezGutierrez/experimento-PQES/actions/workflows/classroom-quality.yml">Calidad del fork</a> ·
   <a href="docs/testing/professor-quick-run.md">Guía para docentes</a>
 </p>
+
+> **Este repositorio es el experimento PQES.** Parte de la [línea base VERA](https://github.com/CarlosSanchezGutierrez/experimento-PQES/tree/vera-baseline-720cef0) para estudiar una nueva implementación y conservar la experiencia y las reglas de negocio. Java o .NET, base de datos, despliegue Docker e integraciones empresariales están **por decidir y validar**. La [auditoría de ramas y calidad](docs/pqes/baseline-and-quality.md) distingue lo heredado de lo ejecutado aquí. La [aplicación VERA publicada](https://vera-salva-ventures.vercel.app) es referencia funcional; no es un despliegue de PQES.
 
 > **Estado del proyecto.** VERA es un prototipo académico con código funcional y pruebas automatizadas. La aplicación publicada exige una cuenta de VERA; el acceso universitario o a Azure DevOps no inicia sesión automáticamente. Un check verde acredita la verificación indicada, no la aceptación de todas las historias en producción. [Estado y límites por HU](docs/hu-acceptance-audit.md).
 
@@ -56,8 +58,8 @@ El asistente combina indicadores calculados por VERA con respuestas de Azure Ope
 ## Una revisión docente en tres pasos
 
 1. **Entender la solución:** recorre el [centro de conocimiento](https://github.com/humbertofigb15/VERA/wiki), que separa producto, arquitectura, permisos y estado de aceptación.
-2. **Ver resultados sin instalar nada:** abre [VERA — Calidad y pruebas completas](https://github.com/humbertofigb15/VERA/actions/workflows/classroom-quality.yml), elige una corrida y consulta *Summary*, logs y artefacto. La [guía de dos minutos](docs/testing/professor-quick-run.md) indica qué cubre y qué no.
-3. **Inspeccionar la ingeniería:** revisa [calidad](https://github.com/humbertofigb15/VERA/actions/workflows/quality.yml), [navegadores](https://github.com/humbertofigb15/VERA/actions/workflows/e2e.yml), [CodeQL](https://github.com/humbertofigb15/VERA/actions/workflows/codeql.yml), [plan de pruebas](docs/testing/test-plan.md) y [PR fusionados](https://github.com/humbertofigb15/VERA/pulls?q=is%3Apr+is%3Amerged). Cada corrida indica el commit y la duración observada.
+2. **Ver resultados sin instalar nada:** abre [PQES — Calidad y pruebas completas](https://github.com/CarlosSanchezGutierrez/experimento-PQES/actions/workflows/classroom-quality.yml), elige una corrida y consulta *Summary*, logs y artefacto. La [guía de dos minutos](docs/testing/professor-quick-run.md) indica qué cubre y qué no.
+3. **Inspeccionar la ingeniería:** revisa [calidad](https://github.com/CarlosSanchezGutierrez/experimento-PQES/actions/workflows/quality.yml), [navegadores](https://github.com/CarlosSanchezGutierrez/experimento-PQES/actions/workflows/e2e.yml), [CodeQL](https://github.com/CarlosSanchezGutierrez/experimento-PQES/actions/workflows/codeql.yml), [plan de pruebas](docs/testing/test-plan.md) y [PR de PQES](https://github.com/CarlosSanchezGutierrez/experimento-PQES/pulls?q=is%3Apr+is%3Amerged). Cada corrida indica el commit y la duración observada.
 
 El workflow completo puede iniciarlo manualmente una persona con permiso de escritura; cualquier visitante puede leer las corridas públicas. La prueba de carga de 150/250 usuarios está **preparada, no acreditada como ejecutada**: requiere un staging autorizado. Los E2E usan fixtures de API y no sustituyen pruebas funcionales con cuentas reales y datos persistentes.
 
@@ -101,10 +103,10 @@ Vite indica la URL local de la interfaz. Los almacenes predeterminados son `memo
 
 | Verificación | Cómo se ejecuta | Qué demuestra |
 | --- | --- | --- |
-| Calidad de código | `npm run quality` y [workflow](https://github.com/humbertofigb15/VERA/actions/workflows/quality.yml) | Pruebas de backend con cobertura, sintaxis/lint, build y auditoría de dependencias del commit. |
-| Interfaz | [Workflow E2E](https://github.com/humbertofigb15/VERA/actions/workflows/e2e.yml) | Flujos automatizados en navegadores y perfiles móvil/tablet con fixtures. |
-| Seguridad estática | [CodeQL](https://github.com/humbertofigb15/VERA/actions/workflows/codeql.yml) | Análisis de JavaScript/TypeScript; no equivale a una auditoría de seguridad completa. |
-| IA | [Evaluación continua manual](https://github.com/humbertofigb15/VERA/actions/workflows/ai-evaluation.yml) | Regresiones sintéticas del contrato y fuentes permitidas, sin llamada ni costo de Azure. |
+| Calidad de código | `npm run quality` y [workflow](https://github.com/CarlosSanchezGutierrez/experimento-PQES/actions/workflows/quality.yml) | Pruebas de backend con cobertura, sintaxis/lint, build y auditoría de dependencias del commit. |
+| Interfaz | [Workflow E2E](https://github.com/CarlosSanchezGutierrez/experimento-PQES/actions/workflows/e2e.yml) | Flujos automatizados en navegadores y perfiles móvil/tablet con fixtures. |
+| Seguridad estática | [CodeQL](https://github.com/CarlosSanchezGutierrez/experimento-PQES/actions/workflows/codeql.yml) | Análisis de JavaScript/TypeScript; no equivale a una auditoría de seguridad completa. |
+| IA | [Evaluación continua manual](https://github.com/CarlosSanchezGutierrez/experimento-PQES/actions/workflows/ai-evaluation.yml) | Regresiones sintéticas del contrato y fuentes permitidas, sin llamada ni costo de Azure. |
 | Aceptación | [Matriz de HU](docs/hu-acceptance-audit.md) y [runbook](docs/testing/operations-runbook.md) | Distinguen lo implementado, lo probado y lo pendiente en el entorno real. |
 
 ## Documentación y contribución
