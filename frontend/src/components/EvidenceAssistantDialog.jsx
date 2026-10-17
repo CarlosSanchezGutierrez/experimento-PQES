@@ -39,7 +39,7 @@ function EvidenceAssistantDialog({ evidence, onClose }) {
     finally { setBusy(false); }
   };
 
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
+  return <div className="modal-backdrop evidence-ai-backdrop" role="presentation" onMouseDown={(event) => {
     if (event.target === event.currentTarget) onClose();
   }}><section className="proposal-modal evidence-ai-modal" role="dialog" aria-modal="true" aria-labelledby="evidence-ai-title">
     <header className="modal-header"><div><span className="eyebrow"><Bot size={15} aria-hidden="true" /> CONSULTA DE EVIDENCIA</span>
