@@ -9,10 +9,10 @@ const {
   listEvidence,
   createEvidence,
   uploadEvidence,
-  downloadEvidence
+  downloadEvidence,
+  askEvidence
 } = require("../controllers/evidenceController");
 const { rateLimit } = require("express-rate-limit");
-const { listEvidence, createEvidence, uploadEvidence, downloadEvidence, askEvidence } = require("../controllers/evidenceController");
 
 // Consultar y descargar: Director incluido.
 router.get("/", verifyToken, listEvidence);
