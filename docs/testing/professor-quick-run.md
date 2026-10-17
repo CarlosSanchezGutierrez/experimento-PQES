@@ -2,11 +2,13 @@
 
 ## Para revisar resultados sin instalar nada
 
-1. Abre [Ejecución completa de calidad y pruebas en GitHub Actions](https://github.com/humbertofigb15/VERA/actions/workflows/classroom-quality.yml).
+1. Abre [Ejecución completa de calidad y pruebas de PQES en GitHub Actions](https://github.com/CarlosSanchezGutierrez/experimento-PQES/actions/workflows/classroom-quality.yml).
 2. Entra a la ejecución más reciente, abre **Summary** y revisa resultado, commit, cantidad de pruebas y tiempos. Si está en rojo, lee el paso fallido; no la presentes como aprobada.
 3. Si necesitas los logs detallados, el HTML de Playwright, las capturas, las trazas o los archivos JSON/Markdown, abre el artefacto de esa misma ejecución. El workflow lo conserva durante 30 días.
 
 No hace falta clonar el repositorio, instalar Node, descargar navegadores ni ejecutar comandos localmente para revisar el resultado.
+
+**Comprueba que la corrida pertenece a `CarlosSanchezGutierrez/experimento-PQES` y a su `main`.** Una corrida o insignia de `humbertofigb15/VERA` no acredita el estado de este fork. La [línea base de calidad](../pqes/baseline-and-quality.md) explica cuándo se activaron los workflows y qué falta por ejecutar aquí.
 
 ## Para iniciar una nueva ejecución
 
