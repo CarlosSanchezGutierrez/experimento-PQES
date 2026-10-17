@@ -17,7 +17,7 @@ import {
   UserCog,
   X
 } from "lucide-react";
-import { ROLE_LABELS, USER_ADMIN_ROLES } from "../constants/roles";
+import { ROLE_LABELS, USER_VIEW_ROLES } from "../constants/roles";
 import "../pages/Dashboard.css";
 import "./Sidebar.css";
 
@@ -35,8 +35,8 @@ function Sidebar({ active }) {
     navigate("/");
   };
 
-  const canSeeUsers = USER_ADMIN_ROLES.includes(user?.role);
-  const canSeeAuditLog = user?.role === "SUPER_ADMIN";
+  const canSeeUsers = USER_VIEW_ROLES.includes(user?.role);
+  const canSeeAuditLog = USER_VIEW_ROLES.includes(user?.role);
   const items = [
     { id: "dashboard", label: "Panel de Portafolio", Icon: LayoutDashboard, path: "/dashboard" },
     { id: "planificacion", label: "Planificación", Icon: ClipboardList, path: "/planificacion" },

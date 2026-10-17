@@ -68,7 +68,7 @@ function Usuarios() {
 
   const isProtected = (user) => user.role === "SUPER_ADMIN" && !isSuperAdmin;
 
-  const canEdit = (user) => !isSelf(user) && !isProtected(user);
+  const canEdit = (user) => isSuperAdmin && !isSelf(user) && !isProtected(user);
 
   const replaceUser = (updated) => {
     setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
