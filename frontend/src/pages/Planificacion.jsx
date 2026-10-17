@@ -57,6 +57,7 @@ function Planificacion() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [draftFromAssistant, setDraftFromAssistant] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -83,6 +84,30 @@ function Planificacion() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const pending = sessionStorage.getItem("vera:proposal-draft");
+      if (!pending) return;
+      sessionStorage.removeItem("vera:proposal-draft");
+      try {
+        const value = JSON.parse(pending);
+        if (!canCreate || Number(value.userId) !== Number(user?.id) || value.expiresAt < Date.now()) return;
+        const draft = value.draft;
+        if (!draft || typeof draft !== "object") return;
+        setForm({ ...EMPTY_FORM,
+          title: String(draft.title || "").slice(0, 120), area: String(draft.area || "").slice(0, 100),
+          objective: String(draft.objective || "").slice(0, 500), scope: String(draft.scope || "").slice(0, 500),
+          justification: String(draft.justification || "").slice(0, 500),
+          likelihood: [1, 2, 3].includes(Number(draft.likelihood)) ? Number(draft.likelihood) : 2,
+          impact: [1, 2, 3].includes(Number(draft.impact)) ? Number(draft.impact) : 2 });
+        setEditingId(null);
+        setDraftFromAssistant(true);
+        setIsModalOpen(true);
+      } catch { /* Se descarta un borrador de sesión inválido. */ }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [canCreate, user?.id]);
+
   const openProposals = items.filter((item) => item.status === "OPEN");
   const approvedProposals = items.filter((item) => item.status === "APPROVED");
   const rejectedProposals = items.filter((item) => item.status === "REJECTED");
@@ -91,12 +116,14 @@ function Planificacion() {
 
   const openCreate = () => {
     setEditingId(null);
+    setDraftFromAssistant(false);
     setForm(EMPTY_FORM);
     setIsModalOpen(true);
   };
 
   const openEdit = (item) => {
     setEditingId(item.id);
+    setDraftFromAssistant(false);
     setForm({
       title: item.title,
       area: item.area,
@@ -118,6 +145,7 @@ function Planificacion() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingId(null);
+    setDraftFromAssistant(false);
   };
 
   const run = async (action, successMessage) => {
@@ -474,6 +502,7 @@ function Planificacion() {
                     <X size={20} />
                   </button>
                 </div>
+                {draftFromAssistant && <p className="planning-message">Borrador preparado por el asistente. Revisa todos los campos y completa el periodo antes de guardar; todavía no se ha creado ninguna propuesta.</p>}
                 {error && <p className="planning-message error">{error}</p>}
                 <div className="proposal-form-grid">
                   <label className="full-width">Título de la propuesta

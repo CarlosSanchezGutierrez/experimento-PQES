@@ -7,6 +7,9 @@ const { askAzureOpenAi, readiness } = require("../services/azureOpenAiService");
 const { buildAuditDossier } = require("../services/assistantDossierService");
 const { searchAssistantEvidence } = require("../services/assistantEvidenceSearchService");
 const { buildDecisionInsights } = require("../services/assistantInsightService");
+const { AUDIT_PROPOSAL_CREATE_ROLES } = require("../config/roles");
+const { allowRoles } = require("../middleware/roleMiddleware");
+const { buildProposalDraft } = require("../services/assistantProposalDraftService");
 
 const router = express.Router();
 router.use(verifyToken);
@@ -42,6 +45,31 @@ router.get("/insights", rateLimit({ windowMs: 15 * 60 * 1000, limit: 30,
     return res.json(buildDecisionInsights({ visibleRecords, asOf }));
   } catch {
     return res.status(502).json({ message: "No se pudieron calcular las prioridades." });
+  }
+});
+
+router.post("/draft-proposal", rateLimit({ windowMs: 15 * 60 * 1000, limit: 5,
+  keyGenerator: (req) => String(req.user.id), standardHeaders: "draft-8", legacyHeaders: false }),
+allowRoles(...AUDIT_PROPOSAL_CREATE_ROLES), async (req, res) => {
+  const startedAt = Date.now();
+  const riskId = req.body?.riskId;
+  if (typeof riskId !== "string" || !riskId.trim() || riskId.length > 80) {
+    return res.status(400).json({ message: "Selecciona un riesgo válido para el borrador." });
+  }
+  try {
+    const state = readiness();
+    if (state.reason === "persistent-stores-required") {
+      return res.status(503).json({ message: "El borrador requiere almacenes persistentes en producción." });
+    }
+    const result = await buildProposalDraft(req.user, riskId, { generate: state.available });
+    console.info(JSON.stringify({ event: "VERA_AI_PROPOSAL_DRAFT", status: 200, role: req.user.role,
+      mode: result.mode, durationMs: Date.now() - startedAt }));
+    return res.json(result);
+  } catch (error) {
+    if ([400, 403, 404].includes(error.status)) return res.status(error.status).json({ message: error.message });
+    console.warn(JSON.stringify({ event: "VERA_AI_PROPOSAL_DRAFT_ERROR", status: 502,
+      durationMs: Date.now() - startedAt }));
+    return res.status(502).json({ message: "No se pudo preparar el borrador." });
   }
 });
 
