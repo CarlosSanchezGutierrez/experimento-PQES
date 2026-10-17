@@ -11,10 +11,14 @@ const {
   uploadEvidence,
   downloadEvidence
 } = require("../controllers/evidenceController");
+const { rateLimit } = require("express-rate-limit");
+const { listEvidence, createEvidence, uploadEvidence, downloadEvidence, askEvidence } = require("../controllers/evidenceController");
 
 // Consultar y descargar: Director incluido.
 router.get("/", verifyToken, listEvidence);
 router.get("/:id/download", verifyToken, downloadEvidence);
+router.post("/:id/ask", verifyToken, rateLimit({ windowMs: 15 * 60 * 1000, limit: 10,
+  keyGenerator: (req) => String(req.user.id), standardHeaders: "draft-8", legacyHeaders: false }), askEvidence);
 
 // Crear o subir: Director excluido.
 router.post(
