@@ -1,4 +1,5 @@
 const express = require("express");
+const { rateLimit } = require("express-rate-limit");
 
 const router = express.Router();
 
@@ -12,10 +13,12 @@ const {
   approveRequest,
   rejectRequest
 } = require("../controllers/userController");
+const userReadLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 120,
+  keyGenerator: (req) => String(req.user.id), standardHeaders: "draft-8", legacyHeaders: false });
 
 
 // HU-01: consulta de usuarios para Super Admin y Director.
-router.get("/", verifyToken, allowRoles(...USER_VIEW_ROLES), listUsers);
+router.get("/", verifyToken, userReadLimiter, allowRoles(...USER_VIEW_ROLES), listUsers);
 
 // HU-01: solicitudes de registro (solo Super Admin)
 router.post("/:id/approve", verifyToken, allowRoles(ROLES.SUPER_ADMIN), approveRequest);

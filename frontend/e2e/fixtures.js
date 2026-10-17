@@ -2,7 +2,9 @@ export const dashboardSummary = (role = "DIRECTOR") => {
   const auditor = role === "AUDITOR";
   return {
     role,
-    title: auditor ? "Mis auditorías asignadas" : role === "SUPER_ADMIN" ? "Control ejecutivo del portafolio" : "Decisiones del portafolio",
+    title: ({ SUPER_ADMIN: "Control ejecutivo del portafolio", DIRECTOR: "Consulta del portafolio",
+      GERENTE: "Seguimiento de planeación", AUDITOR: "Mis auditorías asignadas",
+      JEFATURA: "Seguimiento del portafolio" })[role],
     description: "Resumen actualizado del portafolio y sus prioridades.",
     scopeLabel: auditor ? "Solo mis asignaciones" : "Portafolio completo",
     metrics: { total: auditor ? 1 : 4, pending: auditor ? 0 : 2, active: 1, highRisk: auditor ? 1 : 2, openFindings: 1, averageProgress: 70 },
@@ -20,7 +22,9 @@ export const dashboardSummary = (role = "DIRECTOR") => {
       count: likelihood === 3 && impact === 2 ? 1 : 0
     }))),
     pendingItems: [{ id: "AUD-TEST", title: "Auditoría de prueba", area: "Operaciones", status: auditor ? "ACTIVE" : "OPEN", risk: "Alto", quarter: "Q2", year: 2026, progress: 20 }],
-    permissions: { canCreate: ["SUPER_ADMIN", "DIRECTOR", "GERENTE", "JEFATURA"].includes(role), canApprove: ["SUPER_ADMIN", "DIRECTOR"].includes(role), canManageExecution: ["SUPER_ADMIN", "DIRECTOR"].includes(role) }
+    permissions: { canCreate: ["SUPER_ADMIN", "GERENTE", "JEFATURA"].includes(role),
+      canApprove: ["SUPER_ADMIN", "GERENTE"].includes(role),
+      canManageExecution: ["SUPER_ADMIN", "GERENTE"].includes(role) }
   };
 };
 
