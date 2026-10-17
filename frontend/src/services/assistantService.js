@@ -21,6 +21,16 @@ export const getAssistantInsights = async () => {
   return data;
 };
 
+export const getProposalDraft = async (riskId) => {
+  const response = await fetch("/api/assistant/draft-proposal", {
+    method: "POST", headers: { ...headers(), "Content-Type": "application/json" },
+    body: JSON.stringify({ riskId })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "No se pudo preparar el borrador.");
+  return data;
+};
+
 export const askAssistant = async (question, { history = [], focus = null } = {}) => {
   const response = await fetch("/api/assistant/ask", {
     method: "POST",

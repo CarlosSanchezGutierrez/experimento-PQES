@@ -23,6 +23,35 @@ test("Copiloto: explica prioridades y enlaza solo registros visibles", async ({ 
   await expect(panel.getByText(/no representa riesgo residual/)).toBeVisible();
 });
 
+test("Copiloto: un borrador de propuesta requiere revisión y guardado manual", async ({ page }) => {
+  await useSession(page, "GERENTE", 3);
+  await page.route("**/api/assistant/status", (route) => route.fulfill({ json: { available: true, mode: "read-only" } }));
+  await page.route("**/api/assistant/draft-proposal", (route) => route.fulfill({ json: {
+    mode: "generated", persisted: false, reviewRequired: true,
+    source: { title: "Riesgo de proveedores", path: "/riesgos#risk-RSK-55" },
+    draft: { title: "Auditoría de proveedores", area: "Compras", objective: "Evaluar controles de proveedores.",
+      scope: "Compras y revisiones del periodo.", justification: "El riesgo registrado requiere evaluación.",
+      likelihood: 3, impact: 2 }
+  } }));
+  let created = 0;
+  await page.route("**/api/planning/auditors", (route) => route.fulfill({ json: { auditors: [] } }));
+  await page.route("**/api/planning", (route) => {
+    if (route.request().method() === "POST") created += 1;
+    return route.fulfill({ json: { proposals: [] } });
+  });
+  await page.goto("/asistente?type=risk&id=RSK-55");
+  await page.getByRole("button", { name: "Preparar borrador" }).click();
+  const preview = page.getByRole("region", { name: "Borrador de propuesta de auditoría" });
+  await expect(preview.getByText("Auditoría de proveedores")).toBeVisible();
+  await expect(preview.getByRole("link", { name: /Riesgo de proveedores/ })).toHaveAttribute("href", "/riesgos#risk-RSK-55");
+  await preview.getByRole("button", { name: "Usar como borrador en Planificación" }).click();
+  await expect(page).toHaveURL(/\/planificacion$/);
+  const form = page.locator("form.proposal-modal");
+  await expect(form.getByRole("textbox", { name: "Título de la propuesta" })).toHaveValue("Auditoría de proveedores");
+  await expect(form.getByText(/todavía no se ha creado ninguna propuesta/)).toBeVisible();
+  expect(created).toBe(0);
+});
+
 test("Copiloto: busca evidencias visibles y muestra el fragmento y su cobertura", async ({ page }) => {
   await useSession(page, "AUDITOR", 5);
   await page.route("**/api/assistant/status", (route) => route.fulfill({ json: { available: true, mode: "read-only" } }));

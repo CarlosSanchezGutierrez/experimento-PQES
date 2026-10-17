@@ -59,6 +59,11 @@
 .assistant-dossier-sections p { margin: 8px 0 0; color: #607680; font-size: 11px; }
 .assistant-dossier-suggestion { padding: 10px; border-left: 3px solid #138a7a; background: #fff; font-size: 12px; }
 .assistant-dossier-suggestion p { margin: 7px 0; line-height: 1.5; }
+.assistant-proposal-draft { display: grid; gap: 7px; margin-top: 12px; padding: 12px; border: 1px solid #d7e5e7; border-radius: 9px; background: #fff; }
+.assistant-proposal-draft h3,.assistant-proposal-draft p { margin: 0; }
+.assistant-proposal-draft h3 { color: #243844; font-size: 14px; }
+.assistant-proposal-draft p,.assistant-proposal-draft small { font-size: 11px; line-height: 1.5; color: #536b76; }
+.assistant-proposal-draft button { justify-self: start; border: 0; border-radius: 8px; padding: 8px 11px; background: #176c77; color: #fff; cursor: pointer; font: inherit; font-size: 11px; }
 .assistant-brief { margin-top: 24px; text-align: left; }
 .assistant-brief h3 { margin-bottom: 3px; color: #243844; font-size: 15px; }
 .assistant-brief > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }

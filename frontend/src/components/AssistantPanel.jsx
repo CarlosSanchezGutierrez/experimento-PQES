@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Bot, FileText, RotateCcw, Send } from "lucide-react";
-import { askAssistant, getAssistantBrief, getAssistantInsights, getAssistantStatus, getAuditDossier, searchAssistantEvidence } from "../services/assistantService";
+import { askAssistant, getAssistantBrief, getAssistantInsights, getAssistantStatus, getAuditDossier, getProposalDraft, searchAssistantEvidence } from "../services/assistantService";
 import { AssistantConversationContext } from "../contexts/AssistantConversationContext";
 import "../pages/Asistente.css";
 
@@ -14,7 +14,9 @@ const promptsByRole = {
 };
 
 function AssistantPanel({ focus = null }) {
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "null");
+  const canDraftProposal = ["SUPER_ADMIN", "GERENTE", "JEFATURA"].includes(user?.role);
   const focused = Boolean(focus);
   const { conversations, updateConversation } = useContext(AssistantConversationContext);
   const conversationKey = focus ? `${focus.type}:${focus.id}` : "general";
@@ -31,6 +33,9 @@ function AssistantPanel({ focus = null }) {
   const [dossier, setDossier] = useState(null);
   const [dossierBusy, setDossierBusy] = useState(false);
   const [dossierError, setDossierError] = useState("");
+  const [proposalDraft, setProposalDraft] = useState(null);
+  const [draftBusy, setDraftBusy] = useState(false);
+  const [draftError, setDraftError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -73,6 +78,21 @@ function AssistantPanel({ focus = null }) {
     finally { setDossierBusy(false); }
   };
 
+  const prepareProposalDraft = async () => {
+    if (!canDraftProposal || focus?.type !== "risk" || draftBusy) return;
+    setDraftBusy(true); setDraftError("");
+    try { setProposalDraft(await getProposalDraft(focus.id)); }
+    catch (cause) { setDraftError(cause.message); }
+    finally { setDraftBusy(false); }
+  };
+
+  const useProposalDraft = () => {
+    if (!proposalDraft?.reviewRequired || !canDraftProposal) return;
+    sessionStorage.setItem("vera:proposal-draft", JSON.stringify({ userId: user.id,
+      expiresAt: Date.now() + 10 * 60 * 1000, draft: proposalDraft.draft }));
+    navigate("/planificacion");
+  };
+
   const prompts = focus
     ? [`Resume este ${focus.type === "audit" ? "expediente de auditoría" : focus.type === "risk" ? "riesgo" : "registro"} y sus relaciones.`,
       ...(focus.type === "risk" ? ["¿Cuál es el nivel y el puntaje de este riesgo?"] : []),
@@ -93,6 +113,16 @@ function AssistantPanel({ focus = null }) {
         {dossier.suggestion && <div className="assistant-dossier-suggestion"><b>Siguiente paso sugerido por IA · requiere revisión</b><p>{dossier.suggestion.text}</p><ul>{dossier.suggestion.citations.map((item) => <li key={item.sourceId}><Link to={item.path}>{item.type}: {item.title} <ArrowRight size={12} aria-hidden="true" /></Link></li>)}</ul></div>}
         {!dossier.suggestion && <small>Sin sugerencia de IA con fuente verificable. Los datos calculados siguen disponibles.</small>}
       </div>}
+    </section>}
+    {focus?.type === "risk" && canDraftProposal && <section className="assistant-dossier" aria-label="Borrador de propuesta de auditoría">
+      <div className="assistant-dossier-header"><div><h2>Propuesta a partir de este riesgo</h2><p>El borrador no crea ni aprueba una auditoría.</p></div>
+        <button type="button" onClick={prepareProposalDraft} disabled={draftBusy}>{draftBusy ? "Preparando..." : "Preparar borrador"}</button></div>
+      {draftError && <p className="assistant-error" role="alert">{draftError}</p>}
+      {proposalDraft && <div className="assistant-proposal-draft"><small>{proposalDraft.mode === "generated" ? "Redactado con IA" : "Plantilla basada en el riesgo"} · requiere revisión humana</small>
+        <h3>{proposalDraft.draft.title}</h3><p><b>Objetivo:</b> {proposalDraft.draft.objective}</p><p><b>Alcance:</b> {proposalDraft.draft.scope}</p>
+        <p><b>Justificación:</b> {proposalDraft.draft.justification}</p><p><b>Área:</b> {proposalDraft.draft.area || "Por definir"}</p>
+        <Link to={proposalDraft.source.path}>Fuente: {proposalDraft.source.title} <ArrowRight size={13} aria-hidden="true" /></Link>
+        <button type="button" onClick={useProposalDraft}>Usar como borrador en Planificación</button></div>}
     </section>}
     {available === null && <p className="assistant-state" role="status">Comprobando disponibilidad...</p>}
     {available === false && <p className="assistant-state" role="status">{reason === "persistent-stores-required"
