@@ -14,6 +14,13 @@ export const getAssistantBrief = async () => {
   return data;
 };
 
+export const getAssistantInsights = async () => {
+  const response = await fetch("/api/assistant/insights", { headers: headers() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "No se pudieron cargar las prioridades.");
+  return data;
+};
+
 export const askAssistant = async (question, { history = [], focus = null } = {}) => {
   const response = await fetch("/api/assistant/ask", {
     method: "POST",

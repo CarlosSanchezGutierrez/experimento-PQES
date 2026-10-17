@@ -4,6 +4,23 @@ import { useSession } from "./fixtures.js";
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/assistant/brief", (route) => route.fulfill({ json: { role: "AUDITOR", signals: [] } }));
+  await page.route("**/api/assistant/insights", (route) => route.fulfill({ json: { insights: [], partial: false } }));
+});
+
+test("Copiloto: explica prioridades y enlaza solo registros visibles", async ({ page }) => {
+  await useSession(page, "AUDITOR", 5);
+  await page.route("**/api/assistant/status", (route) => route.fulfill({ json: { available: false, mode: "read-only" } }));
+  await page.route("**/api/assistant/insights", (route) => route.fulfill({ json: {
+    method: "rule-based-attention-v1", evaluated: 1, totalShown: 1, partial: false,
+    insights: [{ key: "risk:RSK-1", title: "Riesgo de proveedores", reason: "Riesgo registrado con señales que requieren revisión.",
+      factors: ["Nivel registrado: Alto", "Controles por revisar: 1"],
+      source: { path: "/riesgos#risk-RSK-1", sourceId: "risks:RSK-1" } }]
+  } }));
+  await page.goto("/asistente");
+  const panel = page.getByRole("region", { name: "Prioridades explicables" });
+  await expect(panel.getByRole("link", { name: "Riesgo de proveedores" })).toHaveAttribute("href", "/riesgos#risk-RSK-1");
+  await expect(panel.getByText(/Controles por revisar: 1/)).toBeVisible();
+  await expect(panel.getByText(/no representa riesgo residual/)).toBeVisible();
 });
 
 test("Copiloto: busca evidencias visibles y muestra el fragmento y su cobertura", async ({ page }) => {
