@@ -31,6 +31,16 @@ export const getProposalDraft = async (riskId) => {
   return data;
 };
 
+export const submitAssistantFeedback = async (feedbackToken, rating) => {
+  const response = await fetch("/api/assistant/feedback", {
+    method: "POST", headers: { ...headers(), "Content-Type": "application/json" },
+    body: JSON.stringify({ feedbackToken, rating })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "No se pudo registrar tu valoración.");
+  return data;
+};
+
 export const askAssistant = async (question, { history = [], focus = null } = {}) => {
   const response = await fetch("/api/assistant/ask", {
     method: "POST",

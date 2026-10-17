@@ -7,9 +7,11 @@ const { askAzureOpenAi, readiness } = require("../services/azureOpenAiService");
 const { buildAuditDossier } = require("../services/assistantDossierService");
 const { searchAssistantEvidence } = require("../services/assistantEvidenceSearchService");
 const { buildDecisionInsights } = require("../services/assistantInsightService");
-const { AUDIT_PROPOSAL_CREATE_ROLES } = require("../config/roles");
+const { AUDIT_PROPOSAL_CREATE_ROLES, ROLES } = require("../config/roles");
 const { allowRoles } = require("../middleware/roleMiddleware");
 const { buildProposalDraft } = require("../services/assistantProposalDraftService");
+const { issueFeedbackToken, verifyFeedbackToken } = require("../services/assistantFeedbackToken");
+const assistantFeedback = require("../repositories/assistantFeedbackRepository");
 
 const router = express.Router();
 router.use(verifyToken);
@@ -73,6 +75,30 @@ allowRoles(...AUDIT_PROPOSAL_CREATE_ROLES), async (req, res) => {
   }
 });
 
+router.post("/feedback", rateLimit({ windowMs: 15 * 60 * 1000, limit: 20,
+  keyGenerator: (req) => String(req.user.id), standardHeaders: "draft-8", legacyHeaders: false }), async (req, res) => {
+  if (typeof req.body?.feedbackToken !== "string" || req.body.feedbackToken.length > 1000 ||
+      !["helpful", "unhelpful"].includes(req.body?.rating)) {
+    return res.status(400).json({ message: "La valoración no es válida." });
+  }
+  try {
+    const { interactionId, channel, mode } = verifyFeedbackToken(req.body.feedbackToken, req.user);
+    await assistantFeedback.save({ interactionId, channel, mode, rating: req.body.rating });
+    console.info(JSON.stringify({ event: "VERA_AI_FEEDBACK", channel, mode, rating: req.body.rating }));
+    return res.status(201).json({ recorded: true });
+  } catch (error) {
+    if ([400, 409, 503].includes(error.status)) return res.status(error.status).json({ message: error.message });
+    return res.status(502).json({ message: "No se pudo registrar la valoración." });
+  }
+});
+
+router.get("/quality", rateLimit({ windowMs: 15 * 60 * 1000, limit: 30,
+  keyGenerator: (req) => String(req.user.id), standardHeaders: "draft-8", legacyHeaders: false }),
+allowRoles(ROLES.SUPER_ADMIN), async (req, res) => {
+  try { return res.json(await assistantFeedback.summary()); }
+  catch { return res.status(503).json({ message: "No se pudo consultar la calidad del asistente." }); }
+});
+
 router.post("/dossier/:auditId", rateLimit({ windowMs: 15 * 60 * 1000, limit: 5,
   keyGenerator: (req) => String(req.user.id), standardHeaders: "draft-8", legacyHeaders: false }), async (req, res) => {
   const startedAt = Date.now();
@@ -119,7 +145,7 @@ router.post("/search-evidence", rateLimit({ windowMs: 15 * 60 * 1000, limit: 5,
     console.info(JSON.stringify({ event: "VERA_AI_EVIDENCE_SEARCH", status: 200, role: req.user.role,
       mode: result.mode, durationMs, promptTokens: result.usage?.prompt_tokens ?? null,
       completionTokens: result.usage?.completion_tokens ?? null }));
-    return res.json({ ...result, durationMs, usage: result.usage ? {
+    return res.json({ ...result, durationMs, feedbackToken: issueFeedbackToken(req.user, "evidence-search", result.mode), usage: result.usage ? {
       promptTokens: result.usage.prompt_tokens ?? null,
       completionTokens: result.usage.completion_tokens ?? null
     } : null });
@@ -155,6 +181,7 @@ router.post("/ask", rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, keyGenerato
       const durationMs = Date.now() - startedAt;
       console.info(JSON.stringify({ event: "VERA_AI_COMPUTED", status: 200, role: req.user.role, durationMs }));
       return res.json({ answer: verified.answer, mode: verified.mode, metric: verified.metric || null,
+        feedbackToken: issueFeedbackToken(req.user, "ask", verified.mode),
         citations, references: verified.references ?? (verified.metric ? [] : references), coverage, asOf, durationMs, usage: null });
     }
     const { answer, sourceIds, usage } = await askAzureOpenAi({ question: question.trim(), context, history });
@@ -162,7 +189,8 @@ router.post("/ask", rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, keyGenerato
     console.info(JSON.stringify({ event: "VERA_AI_ANSWER", status: 200, role: req.user.role,
       durationMs: Date.now() - startedAt, promptTokens: usage?.prompt_tokens ?? null,
       completionTokens: usage?.completion_tokens ?? null }));
-    return res.json({ answer, mode: "generated", citations, references, coverage, asOf, durationMs: Date.now() - startedAt, usage: usage ? {
+    return res.json({ answer, mode: "generated", feedbackToken: issueFeedbackToken(req.user, "ask", "generated"),
+      citations, references, coverage, asOf, durationMs: Date.now() - startedAt, usage: usage ? {
       promptTokens: usage.prompt_tokens ?? null, completionTokens: usage.completion_tokens ?? null
     } : null });
   } catch (error) {

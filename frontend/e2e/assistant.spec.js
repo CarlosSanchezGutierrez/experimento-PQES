@@ -52,6 +52,27 @@ test("Copiloto: un borrador de propuesta requiere revisión y guardado manual", 
   expect(created).toBe(0);
 });
 
+test("Copiloto: la valoración no envía pregunta ni respuesta", async ({ page }) => {
+  await useSession(page, "AUDITOR", 5);
+  await page.route("**/api/assistant/status", (route) => route.fulfill({ json: { available: true, mode: "read-only" } }));
+  await page.route("**/api/assistant/ask", (route) => route.fulfill({ json: {
+    answer: "Hay un riesgo alto en tu alcance.", mode: "computed", feedbackToken: "signed-test-token",
+    citations: [], references: [], durationMs: 20
+  } }));
+  let sent;
+  await page.route("**/api/assistant/feedback", (route) => {
+    sent = route.request().postDataJSON();
+    return route.fulfill({ status: 201, json: { recorded: true } });
+  });
+  await page.goto("/asistente");
+  await page.getByLabel("Tu pregunta").fill("¿Cuántos riesgos altos hay?");
+  await page.getByRole("button", { name: "Enviar pregunta" }).click();
+  await page.getByRole("button", { name: "Me sirvió esta respuesta", exact: true }).click();
+  await expect(page.getByText(/Tu valoración se registró sin guardar el texto/)).toBeVisible();
+  expect(sent).toEqual({ feedbackToken: "signed-test-token", rating: "helpful" });
+  await expect(page.getByRole("button", { name: "Me sirvió esta respuesta", exact: true })).toHaveCount(0);
+});
+
 test("Copiloto: busca evidencias visibles y muestra el fragmento y su cobertura", async ({ page }) => {
   await useSession(page, "AUDITOR", 5);
   await page.route("**/api/assistant/status", (route) => route.fulfill({ json: { available: true, mode: "read-only" } }));
