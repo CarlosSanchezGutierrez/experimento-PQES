@@ -1,13 +1,13 @@
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Bot, FileText, RotateCcw, Send } from "lucide-react";
-import { askAssistant, getAssistantBrief, getAssistantStatus, getAuditDossier, searchAssistantEvidence } from "../services/assistantService";
+import { askAssistant, getAssistantBrief, getAssistantInsights, getAssistantStatus, getAuditDossier, searchAssistantEvidence } from "../services/assistantService";
 import { AssistantConversationContext } from "../contexts/AssistantConversationContext";
 import "../pages/Asistente.css";
 
 const promptsByRole = {
   AUDITOR: ["¿Qué auditorías tengo asignadas?", "¿Cuántos riesgos altos tengo?", "¿Qué actividades tengo pendientes?"],
-  DIRECTOR: ["¿Qué decisiones del portafolio están pendientes?", "¿Cuántas auditorías activas hay?", "Resume las auditorías activas."],
+  DIRECTOR: ["¿Qué actividades del portafolio requieren seguimiento?", "¿Cuántas auditorías activas hay?", "Resume las auditorías activas."],
   SUPER_ADMIN: ["Resume las prioridades del portafolio.", "¿Qué controles necesitan revisión?", "¿Qué propuestas están pendientes?"],
   GERENTE: ["Resume las propuestas abiertas.", "¿Qué riesgos altos hay en el portafolio?", "Prepara un borrador de seguimiento para revisión."],
   JEFATURA: ["¿Qué propuestas esperan revisión?", "Resume los riesgos altos del portafolio.", "Prepara un borrador de propuesta para revisión."]
@@ -15,6 +15,7 @@ const promptsByRole = {
 
 function AssistantPanel({ focus = null }) {
   const user = JSON.parse(localStorage.getItem("user") || "null");
+  const focused = Boolean(focus);
   const { conversations, updateConversation } = useContext(AssistantConversationContext);
   const conversationKey = focus ? `${focus.type}:${focus.id}` : "general";
   const messages = conversations[conversationKey] || [];
@@ -22,6 +23,7 @@ function AssistantPanel({ focus = null }) {
   const [available, setAvailable] = useState(null);
   const [reason, setReason] = useState(null);
   const [brief, setBrief] = useState([]);
+  const [insights, setInsights] = useState(null);
   const [question, setQuestion] = useState("");
   const [withEvidence, setWithEvidence] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -37,8 +39,10 @@ function AssistantPanel({ focus = null }) {
     }).catch((cause) => { if (active) { setAvailable(false); setError(cause.message); } });
     getAssistantBrief().then((result) => { if (active) setBrief(result.signals || []); })
       .catch(() => { /* Las prioridades no bloquean las preguntas. */ });
+    if (!focused) getAssistantInsights().then((result) => { if (active) setInsights(result); })
+      .catch(() => { /* Las prioridades no bloquean las preguntas. */ });
     return () => { active = false; };
-  }, []);
+  }, [focused]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -99,6 +103,7 @@ function AssistantPanel({ focus = null }) {
       <p>Respondo con datos visibles para tu cuenta. Comprueba las fuentes antes de tomar una decisión.</p>
       <div className="assistant-suggestions">{prompts.map((item) => <button key={item} type="button" onClick={() => setQuestion(item)}>{item}</button>)}</div>
       {!focus && brief.length > 0 && <section className="assistant-brief" aria-label="Prioridades actuales"><h3>Señales del portafolio</h3><p>Conteos calculados con registros visibles, sin generación de IA.</p><div>{brief.map((item) => <Link key={item.key} to={item.path}><strong>{item.count}</strong><span>{item.label}</span><ArrowRight size={14} aria-hidden="true" /></Link>)}</div></section>}
+      {!focus && insights?.insights?.length > 0 && <section className="assistant-insights" aria-label="Prioridades explicables"><h3>Qué revisar primero</h3><p>Orden orientativo calculado desde tus registros visibles. Confirma cada dato antes de decidir; no representa riesgo residual.</p><ol>{insights.insights.map((item) => <li key={item.key}><Link to={item.source.path}><strong>{item.title}</strong><ArrowRight size={13} aria-hidden="true" /></Link><span>{item.reason}</span><small>{item.factors.join(" · ")}</small></li>)}</ol>{insights.partial && <small>Se muestran {insights.totalShown} de {insights.evaluated} señales; abre los módulos para revisar las demás.</small>}</section>}
     </div>}
     <div className="assistant-messages" aria-live="polite">{messages.map((message) => <article key={message.id} className={`assistant-message ${message.role}`}>
       <strong>{message.role === "user" ? "Tú" : "Asistente VERA"}</strong><p>{message.text}</p>

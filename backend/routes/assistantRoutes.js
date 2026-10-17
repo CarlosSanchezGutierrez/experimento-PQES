@@ -6,6 +6,7 @@ const { getVerifiedAnswer } = require("../services/assistantVerifiedAnswers");
 const { askAzureOpenAi, readiness } = require("../services/azureOpenAiService");
 const { buildAuditDossier } = require("../services/assistantDossierService");
 const { searchAssistantEvidence } = require("../services/assistantEvidenceSearchService");
+const { buildDecisionInsights } = require("../services/assistantInsightService");
 
 const router = express.Router();
 router.use(verifyToken);
@@ -28,6 +29,19 @@ router.get("/brief", async (req, res) => {
     return res.json({ role: req.user.role, signals: brief });
   } catch {
     return res.status(502).json({ message: "No se pudieron consultar las prioridades." });
+  }
+});
+
+router.get("/insights", rateLimit({ windowMs: 15 * 60 * 1000, limit: 30,
+  keyGenerator: (req) => String(req.user.id), standardHeaders: "draft-8", legacyHeaders: false }), async (req, res) => {
+  try {
+    if (readiness().reason === "persistent-stores-required") {
+      return res.status(503).json({ message: "Las prioridades requieren almacenes persistentes en producción." });
+    }
+    const { visibleRecords, asOf } = await buildAssistantContext(req.user, "prioridades de mi portafolio");
+    return res.json(buildDecisionInsights({ visibleRecords, asOf }));
+  } catch {
+    return res.status(502).json({ message: "No se pudieron calcular las prioridades." });
   }
 });
 

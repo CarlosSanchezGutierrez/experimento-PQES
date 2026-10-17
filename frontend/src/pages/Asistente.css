@@ -64,6 +64,13 @@
 .assistant-brief > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .assistant-brief a { display: inline-flex; align-items: center; gap: 7px; padding: 9px 11px; border: 1px solid #d7e5e7; border-radius: 9px; background: #fff; color: #315463; font-size: 12px; text-decoration: none; }
 .assistant-brief a strong { font-size: 16px; color: #126879; }
+.assistant-insights { margin-top: 22px; text-align: left; }
+.assistant-insights h3 { margin: 0 0 5px; color: #243844; font-size: 15px; }
+.assistant-insights p,.assistant-insights > small { color: #607680; font-size: 11px; line-height: 1.5; }
+.assistant-insights ol { display: grid; gap: 8px; margin: 10px 0; padding-left: 20px; }
+.assistant-insights li { padding: 9px; border: 1px solid #d7e5e7; border-radius: 9px; background: #fff; }
+.assistant-insights li a { display: inline-flex; align-items: center; gap: 4px; color: #126879; text-decoration: none; }
+.assistant-insights li span,.assistant-insights li small { display: block; margin-top: 3px; color: #536b76; font-size: 11px; line-height: 1.45; }
 .assistant-citations { margin-top: 12px; padding: 10px 12px; border-left: 3px solid #138a7a; background: #fff; font-size: 12px; }
 .assistant-citations ul { margin: 6px 0 0; }
 .assistant-citations small,.assistant-source-facts { display: block; margin-top: 4px; color: #536b76; font-size: 11px; line-height: 1.45; }
