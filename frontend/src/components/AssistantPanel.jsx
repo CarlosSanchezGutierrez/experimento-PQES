@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Bot, FileText, RotateCcw, Send } from "lucide-react";
-import { askAssistant, getAssistantBrief, getAssistantInsights, getAssistantStatus, getAuditDossier, getProposalDraft, searchAssistantEvidence } from "../services/assistantService";
+import { ArrowRight, Bot, FileText, RotateCcw, Send, ThumbsDown, ThumbsUp } from "lucide-react";
+import { askAssistant, getAssistantBrief, getAssistantInsights, getAssistantStatus, getAuditDossier, getProposalDraft, searchAssistantEvidence, submitAssistantFeedback } from "../services/assistantService";
 import { AssistantConversationContext } from "../contexts/AssistantConversationContext";
 import "../pages/Asistente.css";
 
@@ -36,6 +36,7 @@ function AssistantPanel({ focus = null }) {
   const [proposalDraft, setProposalDraft] = useState(null);
   const [draftBusy, setDraftBusy] = useState(false);
   const [draftError, setDraftError] = useState("");
+  const [feedbackBusyId, setFeedbackBusyId] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -65,7 +66,7 @@ function AssistantPanel({ focus = null }) {
         mode: result.mode, metric: result.metric,
         citations: result.citations || [], references: result.references || [], coverage: result.coverage,
         asOf: result.asOf,
-        durationMs: result.durationMs }]);
+        durationMs: result.durationMs, feedbackToken: result.feedbackToken || null }]);
     } catch (cause) { setError(cause.message); }
     finally { setBusy(false); }
   };
@@ -91,6 +92,17 @@ function AssistantPanel({ focus = null }) {
     sessionStorage.setItem("vera:proposal-draft", JSON.stringify({ userId: user.id,
       expiresAt: Date.now() + 10 * 60 * 1000, draft: proposalDraft.draft }));
     navigate("/planificacion");
+  };
+
+  const rateResponse = async (message, rating) => {
+    if (!message.feedbackToken || message.feedbackRating || feedbackBusyId) return;
+    setFeedbackBusyId(message.id); setError("");
+    try {
+      await submitAssistantFeedback(message.feedbackToken, rating);
+      setMessages((current) => current.map((item) => item.id === message.id
+        ? { ...item, feedbackRating: rating, feedbackToken: null } : item));
+    } catch (cause) { setError(cause.message); }
+    finally { setFeedbackBusyId(null); }
   };
 
   const prompts = focus
@@ -145,6 +157,8 @@ function AssistantPanel({ focus = null }) {
         {message.citations?.length > 0 && <div className="assistant-citations"><b>Registros citados</b><small>Campos consultados al responder; abre el expediente para ver su estado actual.</small><ul>{message.citations.map((item) => <li key={item.sourceId}><Link to={item.path}>{item.type}: {item.title} <ArrowRight size={13} aria-hidden="true" /></Link>{item.facts?.length > 0 && <span className="assistant-source-facts">{item.facts.map((fact) => `${fact.label}: ${fact.value}`).join(" · ")}</span>}{item.excerpt && <span className="assistant-source-facts">{item.pageNumber ? `Página ${item.pageNumber} · ` : ""}{item.excerpt}</span>}</li>)}</ul></div>}
         {message.citations?.length === 0 && message.mode !== "computed" && <small className="assistant-answer-note">Sin registros citados en esta respuesta.</small>}
         {message.references?.length > 0 && <details><summary>Registros relacionados ({message.references.length})</summary><ul>{message.references.map((item) => <li key={item.sourceId || `${item.type}:${item.id}`}><Link to={item.path}>{item.type}: {item.title} <ArrowRight size={13} aria-hidden="true" /></Link></li>)}</ul></details>}
+        {message.feedbackToken && !message.feedbackRating && <div className="assistant-feedback" aria-label="Valora esta respuesta"><span>¿Te sirvió?</span><button type="button" onClick={() => rateResponse(message, "helpful")} disabled={Boolean(feedbackBusyId)} aria-label="Me sirvió esta respuesta"><ThumbsUp size={14} aria-hidden="true" /> Sí</button><button type="button" onClick={() => rateResponse(message, "unhelpful")} disabled={Boolean(feedbackBusyId)} aria-label="No me sirvió esta respuesta"><ThumbsDown size={14} aria-hidden="true" /> No</button></div>}
+        {message.feedbackRating && <small className="assistant-answer-note" role="status">Gracias. Tu valoración se registró sin guardar el texto de la conversación.</small>}
       </>}</article>)}</div>
     {busy && <p className="assistant-state" role="status">Consultando información autorizada...</p>}
     {error && <p className="assistant-error" role="alert">{error}</p>}
