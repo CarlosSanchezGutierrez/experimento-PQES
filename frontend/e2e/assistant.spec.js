@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
 
 test("Copiloto: explica prioridades y enlaza solo registros visibles", async ({ page }) => {
   await useSession(page, "AUDITOR", 5);
-  await page.route("**/api/assistant/status", (route) => route.fulfill({ json: { available: true, mode: "read-only" } }));
+  await page.route("**/api/assistant/status", (route) => route.fulfill({ json: { available: false, mode: "read-only" } }));
   await page.route("**/api/assistant/insights", (route) => route.fulfill({ json: {
     method: "rule-based-attention-v1", evaluated: 1, totalShown: 1, partial: false,
     insights: [{ key: "risk:RSK-1", title: "Riesgo de proveedores", reason: "Riesgo registrado con señales que requieren revisión.",

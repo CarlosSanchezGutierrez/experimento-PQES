@@ -4,7 +4,7 @@ El asistente muestra **Qué revisar primero** al abrir la vista general. Cada ta
 
 ## Fuente y alcance
 
-`GET /api/assistant/insights` exige sesión, desactiva caché y usa `buildAssistantContext` para obtener auditorías, riesgos, controles, hallazgos y pendientes visibles para el rol. El Auditor solo recibe registros de su alcance; las relaciones de controles se cuentan únicamente contra riesgos visibles. En producción, el endpoint exige almacenes persistentes. Esta consulta no envía datos a Azure OpenAI y sigue disponible si el modelo está temporalmente apagado.
+`GET /api/assistant/insights` exige sesión, desactiva caché y usa `buildAssistantContext` para obtener auditorías, riesgos, controles, hallazgos y pendientes visibles para el rol. El Auditor solo recibe registros de su alcance; las relaciones de controles se cuentan únicamente contra riesgos visibles. En producción, el endpoint exige almacenes persistentes. Esta consulta no envía datos a Azure OpenAI; las tarjetas siguen visibles si el modelo está temporalmente apagado.
 
 ## Orden de atención
 
